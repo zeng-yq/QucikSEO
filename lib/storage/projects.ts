@@ -11,9 +11,8 @@ export async function getProjects(): Promise<Project[]> {
 
 async function save(list: Project[]) { await chrome.storage.local.set({ [KEY]: list }); }
 
-// 注：spec §6 列有 PROJECTS_CHANGED 跨视图刷新广播，此处刻意不实现。
-// 侧边栏是单页路由（同一时刻只挂载一个工具页），用户导航到 Projects/GSC 时
-// useProjects 会随组件挂载重新拉取，无需 storage.changed 广播即可保持一致。
+// 跨视图同步：依赖 chrome.storage.onChanged（storage.local.set 自动触发），
+// useProjects 监听 'projects' key 变化自动 refresh，无需此处手动广播。
 
 export async function addProject(domain: string, label?: string): Promise<Project> {
   const d = domain.trim();

@@ -4,6 +4,16 @@ import { vi } from 'vitest';
 
 // chrome.storage.local 内存实现（兼容 callback 与 Promise 两种调用风格）
 const memStore = new Map<string, unknown>();
+
+// storage.onChanged 监听器（与 memStore 同作用域，便于 resetChromeMock 清理）
+const onChangedListeners: Array<(changes: Record<string, chrome.storage.StorageChange>, area: string) => void> = [];
+
+const fireOnChanged = (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => {
+  for (const cb of onChangedListeners) {
+    try { cb(changes as never, area); } catch { /* listener 容错 */ }
+  }
+};
+
 const storageArea = {
   get(keys: string | string[] | null | object, cb?: (items: Record<string, unknown>) => void) {
     const out: Record<string, unknown> = {};
@@ -14,23 +24,42 @@ const storageArea = {
     return Promise.resolve(result);
   },
   set(items: Record<string, unknown>, cb?: () => void) {
-    for (const [k, v] of Object.entries(items)) memStore.set(k, v);
+    const changes: Record<string, { oldValue?: unknown; newValue?: unknown }> = {};
+    for (const [k, v] of Object.entries(items)) {
+      changes[k] = { oldValue: memStore.get(k), newValue: v };
+      memStore.set(k, v);
+    }
     cb?.();
+    fireOnChanged(changes, 'local');
     return Promise.resolve();
   },
   remove(keys: string | string[], cb?: () => void) {
     const keyList = Array.isArray(keys) ? keys : [keys];
-    for (const k of keyList) memStore.delete(k);
+    const changes: Record<string, { oldValue?: unknown; newValue: undefined }> = {};
+    for (const k of keyList) { changes[k] = { oldValue: memStore.get(k), newValue: undefined }; memStore.delete(k); }
     cb?.();
+    fireOnChanged(changes, 'local');
     return Promise.resolve();
   },
   clear(cb?: () => void) { memStore.clear(); cb?.(); return Promise.resolve(); },
 };
 
-function resetChromeMock() { memStore.clear(); }
+// 每个测试前重置 storage 与 onChanged 监听器，避免用例间污染
+function resetChromeMock() { memStore.clear(); onChangedListeners.length = 0; }
 
 const chromeMock = {
-  storage: { local: storageArea, session: storageArea },
+  storage: {
+    local: storageArea,
+    session: storageArea,
+    onChanged: {
+      addListener: (cb: (changes: Record<string, chrome.storage.StorageChange>, area: string) => void) => { onChangedListeners.push(cb); },
+      removeListener: (cb: (changes: Record<string, chrome.storage.StorageChange>, area: string) => void) => {
+        const i = onChangedListeners.indexOf(cb);
+        if (i >= 0) onChangedListeners.splice(i, 1);
+      },
+      hasListener: () => false,
+    },
+  },
   runtime: {
     id: 'test-extension-id',
     onMessage: { addListener: () => {}, removeListener: () => {} },

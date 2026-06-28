@@ -4,7 +4,18 @@ import { getProjects, addProject, removeProject, updateProject, type Project } f
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const refresh = useCallback(() => { getProjects().then(setProjects); }, []);
-  useEffect(() => { refresh(); }, [refresh]);
+
+  useEffect(() => {
+    refresh();
+    // 跨视图同步：真实环境 storage.local.set 自动触发 onChanged。
+    const handler = (changes: Record<string, unknown>, area: string) => {
+      if (area === 'local' && 'projects' in changes) refresh();
+    };
+    // onChanged 在测试/某些环境可能缺失，容错。
+    chrome.storage.onChanged?.addListener(handler);
+    return () => chrome.storage.onChanged?.removeListener(handler);
+  }, [refresh]);
+
   const add = useCallback((domain: string, label?: string) => addProject(domain, label).then(refresh), [refresh]);
   const remove = useCallback((id: string) => removeProject(id).then(refresh), [refresh]);
   const update = useCallback((id: string, patch: { domain?: string; label?: string }) => updateProject(id, patch).then(refresh), [refresh]);

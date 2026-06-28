@@ -26,7 +26,6 @@ import { PROBES } from '../lib/gsc/selectors';
 import { runBatch as bingRunBatch } from '../lib/bing/flow';
 import { buildBingUrl } from '../lib/bing/url';
 import { PROBES as BING_PROBES } from '../lib/bing/selectors';
-import { getProjectById } from '../lib/storage/projects';
 import { getSettings } from '../lib/storage/settings';
 import { GSC_PORT_NAME, BING_PORT_NAME } from '../lib/messaging/protocol';
 import type { GscRequest, GscEvent, BingRequest, BingEvent } from '../lib/messaging/types';
@@ -106,7 +105,7 @@ export default defineBackground(() => {
   /**
    * 编排一次批量执行。
    *
-   * 流程：取项目/设置 → 开 tab → attach → 等 SPA 就绪（§1）→ 登录/权限前置检查（§3）
+   * 流程：取设置（accountIndex）→ 开 tab → attach → 等 SPA 就绪（§1）→ 登录/权限前置检查（§3）
    *   → runBatch（推 GSC_STATE / GSC_LOG，shouldStop 接 stop 标志）→ 推 GSC_DONE → detach。
    * 任一阶段失败：推 error 日志 + GSC_DONE(0/0/0)，确保 UI 一定能收到结束事件。
    *
@@ -123,19 +122,12 @@ export default defineBackground(() => {
    */
   async function handleStart(
     port: chrome.runtime.Port,
-    msg: { projectId: string; urls: string[] },
+    msg: { domain: string; urls: string[] },
   ): Promise<void> {
     stopRequested = false;
 
-    const project = await getProjectById(msg.projectId);
-    if (!project) {
-      emit(port, { type: 'GSC_LOG', level: 'error', phase: 'system', message: '项目不存在' });
-      emit(port, { type: 'GSC_DONE', ok: 0, failed: 0, skipped: 0 });
-      return;
-    }
-
     const { accountIndex } = await getSettings();
-    const gscUrl = buildGscUrl(project.domain, accountIndex);
+    const gscUrl = buildGscUrl(msg.domain, accountIndex);
 
     emit(port, { type: 'GSC_LOG', level: 'info', phase: 'system', message: '打开 GSC…' });
     const tab = await chrome.tabs.create({ url: gscUrl, active: false });
@@ -169,7 +161,7 @@ export default defineBackground(() => {
         return;
       }
       if (check.needsVerify) {
-        emit(port, { type: 'GSC_LOG', level: 'error', phase: 'system', message: `当前账号无 ${project.domain} 资源权限` });
+        emit(port, { type: 'GSC_LOG', level: 'error', phase: 'system', message: `当前账号无 ${msg.domain} 资源权限` });
         emit(port, { type: 'GSC_DONE', ok: 0, failed: 0, skipped: 0 });
         return;
       }
@@ -222,24 +214,17 @@ export default defineBackground(() => {
   /**
    * 编排一次 Bing 批量执行（与 handleStart 同构，换 Bing URL/flow/事件）。
    *
-   * 流程：取项目 → 开 tab → attach → 等 SPA 就绪（§1）→ 登录前置检查（§3）
+   * 流程：用 domain 拼 URL → 开 tab → attach → 等 SPA 就绪（§1）→ 登录前置检查（§3）
    *   → bingRunBatch（推 BING_STATE / BING_LOG，shouldStop 接闭包 stop 标志）→ 推 BING_DONE → detach。
    * 任一阶段失败：推 error 日志 + BING_DONE，确保 UI 一定能收到结束事件。
    * Bing 无需 accountIndex（siteUrl 直接用 domain），故不读 settings。
    */
   async function handleBingStart(
     port: chrome.runtime.Port,
-    msg: { projectId: string; urls: string[] },
+    msg: { domain: string; urls: string[] },
     shouldStop: () => boolean,
   ): Promise<void> {
-    const project = await getProjectById(msg.projectId);
-    if (!project) {
-      emit(port, { type: 'BING_LOG', level: 'error', phase: 'system', message: '项目不存在' });
-      emit(port, { type: 'BING_DONE', ok: 0, failed: 0, skipped: 0 });
-      return;
-    }
-
-    const bingUrl = buildBingUrl(project.domain);
+    const bingUrl = buildBingUrl(msg.domain);
 
     emit(port, { type: 'BING_LOG', level: 'info', phase: 'system', message: '打开 Bing…' });
     const tab = await chrome.tabs.create({ url: bingUrl, active: false });

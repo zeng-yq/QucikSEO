@@ -14,7 +14,8 @@ export default function BingTool() {
   const [text, setText] = useState('');
 
   const urls = text.split('\n').map((s) => s.trim()).filter(Boolean);
-  const ready = !!projectId && urls.length > 0 && !state.running;
+  const project = projects.find((p) => p.id === projectId);
+  const ready = !!project && urls.length > 0 && !state.running;
 
   return (
     <div style={{ padding: 'var(--space-md)' }}>
@@ -34,7 +35,7 @@ export default function BingTool() {
       <Textarea rows={6} value={text} placeholder={'https://example.com/de/\nhttps://example.com/es/'} onChange={(e) => setText(e.target.value)} />
 
       <div style={{ display: 'flex', gap: 8, marginTop: 'var(--space-md)' }}>
-        <Button onClick={() => start(projectId, urls)} disabled={!ready} style={{ flex: 1 }}>开始批量提交</Button>
+        <Button onClick={() => project && start(project.domain, urls)} disabled={!ready} style={{ flex: 1 }}>开始批量提交</Button>
         {state.running && <Button variant="secondary" onClick={cancel}>取消</Button>}
       </div>
 

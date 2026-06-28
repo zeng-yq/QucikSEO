@@ -20,6 +20,8 @@ interface LogEntry {
 
 export function useGscRunner() {
   const portRef = useRef<chrome.runtime.Port | null>(null);
+  /** start 返回的 Promise 的 resolve；GSC_DONE 到达时调用并清空。供 Task 8 orchestrator 串行 await。 */
+  const doneRef = useRef<(() => void) | null>(null);
   const [state, setState] = useState<RunnerState>(IDLE);
   const [results, setResults] = useState<SubmitResult[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -40,16 +42,23 @@ export function useGscRunner() {
         setLogs((prev) => [...prev, { level: e.level, phase: e.phase, message: e.message, ts: Date.now() }]);
       } else if (e.type === 'GSC_DONE') {
         setState(IDLE);
+        doneRef.current?.();
+        doneRef.current = null;
       }
     });
     return () => port.disconnect();
   }, []);
 
-  const start = useCallback((projectId: string, urls: string[]) => {
+  /**
+   * 启动一次批量「请求编入索引」。
+   * 返回一个在 background 推送 GSC_DONE 时 resolve 的 Promise（Task 8 orchestrator 串行 await 依赖此行为）。
+   */
+  const start = useCallback((domain: string, urls: string[]): Promise<void> => {
     setLogs([]);
     setResults([]);
     setState({ running: true, total: urls.length, done: 0 });
-    portRef.current?.postMessage({ type: 'GSC_START', projectId, urls });
+    portRef.current?.postMessage({ type: 'GSC_START', domain, urls });
+    return new Promise<void>((resolve) => { doneRef.current = resolve; });
   }, []);
 
   const cancel = useCallback(() => {

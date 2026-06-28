@@ -1,9 +1,10 @@
-export type Route = 'gsc' | 'bing' | 'ahrefs' | 'projects';
+export type Route = 'gsc' | 'bing' | 'ahrefs' | 'seo-files' | 'projects';
 
 const NAV_ITEMS: { key: Route; label: string }[] = [
   { key: 'gsc', label: 'GSC 批量提交' },
   { key: 'bing', label: 'Bing 批量提交' },
   { key: 'ahrefs', label: 'Ahrefs KD 查询' },
+  { key: 'seo-files', label: 'SEO 文件' },
   { key: 'projects', label: '项目管理' },
 ];
 

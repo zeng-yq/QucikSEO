@@ -3,6 +3,7 @@ import SideNav, { type Route } from './components/SideNav';
 import AhrefsTool from './pages/AhrefsTool';
 import GscTool from './pages/GscTool';
 import BingTool from './pages/BingTool';
+import SeoFiles from './pages/SeoFiles';
 import Projects from './pages/Projects';
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
         {route === 'gsc' && <GscTool />}
         {route === 'bing' && <BingTool />}
         {route === 'ahrefs' && <AhrefsTool />}
+        {route === 'seo-files' && <SeoFiles />}
         {route === 'projects' && <Projects />}
       </main>
     </div>

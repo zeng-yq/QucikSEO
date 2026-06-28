@@ -13,7 +13,7 @@ import type { BingRequest, BingEvent } from '../lib/messaging/types';
 
 describe('bing messaging types', () => {
   it('BING_START 结构', () => {
-    const m: BingRequest = { type: 'BING_START', projectId: 'p1', urls: ['https://x.com/'] };
+    const m: BingRequest = { type: 'BING_START', domain: 'example.com', urls: ['https://x.com/'] };
     expect(m.type).toBe('BING_START');
   });
 

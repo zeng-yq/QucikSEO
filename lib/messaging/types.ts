@@ -11,8 +11,8 @@
 /** 启动一次批量「请求编入索引」。 */
 export interface GscStart {
   type: 'GSC_START';
-  /** 目标项目（提供域名），background 用其 domain 拼 GSC URL。 */
-  projectId: string;
+  /** 目标域名，background 用其拼 GSC URL（手动填或项目域名）。 */
+  domain: string;
   /** 待提交的 URL 列表，逐条经 runBatch 执行。 */
   urls: string[];
 }
@@ -69,8 +69,8 @@ export type GscEvent = GscState | GscLog | GscDone;
 /** 启动一次 Bing 批量「Request indexing」。 */
 export interface BingStart {
   type: 'BING_START';
-  /** 目标项目（提供域名），background 用其 domain 拼 Bing URL Inspection URL 的 siteUrl 参数。 */
-  projectId: string;
+  /** 目标域名，background 用其拼 Bing URL Inspection 的 siteUrl 参数。 */
+  domain: string;
   /** 待提交的 URL 列表，逐条经 runBatch 执行。 */
   urls: string[];
 }

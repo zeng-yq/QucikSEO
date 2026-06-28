@@ -16,7 +16,7 @@ import type { GscRequest, GscEvent } from '../lib/messaging/types';
 
 describe('messaging types', () => {
   it('GSC_START 结构', () => {
-    const m: GscRequest = { type: 'GSC_START', projectId: 'p1', urls: ['https://x.com/'] };
+    const m: GscRequest = { type: 'GSC_START', domain: 'example.com', urls: ['https://x.com/'] };
     expect(m.type).toBe('GSC_START');
   });
 

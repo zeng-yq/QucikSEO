@@ -1,22 +1,18 @@
+// entrypoints/sidepanel/App.tsx
 import { useState } from 'react';
-import SideNav, { type Route } from './components/SideNav';
-import AhrefsTool from './pages/AhrefsTool';
-import GscTool from './pages/GscTool';
-import BingTool from './pages/BingTool';
-import SeoFiles from './pages/SeoFiles';
-import Projects from './pages/Projects';
+import Header from './components/Header';
+import TabBar, { type Tab } from './components/TabBar';
+import SiteTools from './pages/SiteTools';
+import KeywordTools from './pages/KeywordTools';
 
 export default function App() {
-  const [route, setRoute] = useState<Route>('gsc');
+  const [tab, setTab] = useState<Tab>('site');
   return (
-    <div style={{ display: 'flex', height: '100%' }}>
-      <SideNav route={route} onNavigate={setRoute} />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Header />
+      <TabBar tab={tab} onChange={setTab} />
       <main style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
-        {route === 'gsc' && <GscTool />}
-        {route === 'bing' && <BingTool />}
-        {route === 'ahrefs' && <AhrefsTool />}
-        {route === 'seo-files' && <SeoFiles />}
-        {route === 'projects' && <Projects />}
+        {tab === 'site' ? <SiteTools /> : <KeywordTools />}
       </main>
     </div>
   );

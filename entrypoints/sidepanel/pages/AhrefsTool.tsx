@@ -35,7 +35,7 @@ export default function AhrefsTool() {
   }
 
   return (
-    <div style={{ padding: 'var(--space-md)' }}>
+    <div>
       <label style={{ display: 'block', fontSize: 12, color: 'var(--color-muted)', marginBottom: 4 }}>国家</label>
       <Select value={country} options={options} onChange={(e) => {
         if (e.target.value === '__custom') { setCustom(true); setCountry(''); }

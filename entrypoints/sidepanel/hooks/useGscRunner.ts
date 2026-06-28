@@ -15,6 +15,7 @@ interface LogEntry {
   level: 'info' | 'warn' | 'error';
   phase: string;
   message: string;
+  ts: number;
 }
 
 export function useGscRunner() {
@@ -36,7 +37,7 @@ export function useGscRunner() {
         });
         setResults(e.results);
       } else if (e.type === 'GSC_LOG') {
-        setLogs((prev) => [...prev, { level: e.level, phase: e.phase, message: e.message }]);
+        setLogs((prev) => [...prev, { level: e.level, phase: e.phase, message: e.message, ts: Date.now() }]);
       } else if (e.type === 'GSC_DONE') {
         setState(IDLE);
       }

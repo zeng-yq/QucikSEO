@@ -15,6 +15,7 @@ interface LogEntry {
   level: 'info' | 'warn' | 'error';
   phase: string;
   message: string;
+  ts: number;
 }
 
 export function useBingRunner() {
@@ -36,7 +37,7 @@ export function useBingRunner() {
         });
         setResults(e.results);
       } else if (e.type === 'BING_LOG') {
-        setLogs((prev) => [...prev, { level: e.level, phase: e.phase, message: e.message }]);
+        setLogs((prev) => [...prev, { level: e.level, phase: e.phase, message: e.message, ts: Date.now() }]);
       } else if (e.type === 'BING_DONE') {
         setState(IDLE);
       }

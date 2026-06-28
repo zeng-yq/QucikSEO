@@ -14,8 +14,9 @@ describe('Combobox', () => {
   });
   it('点击建议触发 onChange', () => {
     const onChange = vi.fn();
-    render(<Combobox value="ex" options={['example.com']} onChange={onChange} />);
-    fireEvent.change(screen.getByDisplayValue('ex'), { target: { value: 'ex' } });
+    const { container } = render(<Combobox value="" options={['example.com']} onChange={onChange} />);
+    const input = container.querySelector('input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'ex' } });
     fireEvent.mouseDown(screen.getByText('example.com'));
     expect(onChange).toHaveBeenCalledWith('example.com');
   });

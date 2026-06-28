@@ -19,10 +19,8 @@ export default function Combobox({ value, options, onChange, onManage, placehold
   const suggestions = filterText
     ? options.filter((o) => o.toLowerCase().includes(filterText.toLowerCase())).slice(0, 8)
     : options.slice(0, 8);
-  // 下拉建议显示条件：显式 open（聚焦/输入）或受控 value 已有值（React 19 会抑制
-  // 值未变化的 change 事件，仅靠 open 状态不足以让同值 change 后的下拉出现，
-  // 因此在 value 非空时也展示，保证用户始终能看见匹配项）。
-  const showSuggestions = (open || value.trim() !== '') && suggestions.length > 0;
+  // 下拉建议显示条件：仅由 open 控制（聚焦/输入时为 true，onBlur 后为 false）。
+  const showSuggestions = open && suggestions.length > 0;
 
   return (
     <div style={{ position: 'relative', display: 'flex', gap: 8 }}>
@@ -50,7 +48,7 @@ export default function Combobox({ value, options, onChange, onManage, placehold
               <button
                 key={o}
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); onChange(o); setOpen(false); }}
+                onMouseDown={(e) => { e.preventDefault(); onChange(o); setQuery(o); setOpen(false); }}
                 style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'transparent', padding: '6px 10px', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--color-ink)', cursor: 'pointer' }}
               >
                 {o}

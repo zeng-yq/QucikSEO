@@ -1,4 +1,3 @@
-// entrypoints/sidepanel/hooks/useSite.ts
 import { useCallback, useEffect, useState } from 'react';
 
 export interface Site { domain: string; }

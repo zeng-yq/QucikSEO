@@ -1,4 +1,3 @@
-// entrypoints/sidepanel/components/ToolCard.tsx
 import { IconChevron } from './icons';
 
 export interface ToolCardProps {

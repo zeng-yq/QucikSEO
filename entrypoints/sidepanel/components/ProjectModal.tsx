@@ -1,4 +1,3 @@
-// entrypoints/sidepanel/components/ProjectModal.tsx
 import { useEffect, useState } from 'react';
 import Button from './Button';
 import TextInput from './TextInput';

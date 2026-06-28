@@ -20,7 +20,7 @@ describe('SubmitPanel', () => {
     render(<SubmitPanel site={{ domain: 'not a domain' }} onBack={() => {}} />);
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'https://example.com/' } });
     fireEvent.click(screen.getByText('一次提交'));
-    expect(screen.getByText(/请先选择或填写有效网站/)).toBeTruthy();
+    expect(screen.getByText(/请先选择或填写有效网站/)).toBeInTheDocument();
     expect(run).not.toHaveBeenCalled();
   });
   it('有效域名 + 链接时点击提交调用 run', () => {

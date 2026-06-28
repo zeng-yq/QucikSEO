@@ -1,4 +1,3 @@
-// entrypoints/sidepanel/pages/SubmitPanel.tsx
 import { useState } from 'react';
 import Button from '../components/Button';
 import Textarea from '../components/Textarea';

@@ -20,9 +20,9 @@ export function useSubmitOrchestrator() {
       try { await bing.start(domain, urls); } catch { /* 同上 */ }
     }
     setActive(null);
-  }, [gsc, bing, active]);
+  }, [gsc.start, bing.start, active]);
 
-  const cancel = useCallback(() => { gsc.cancel(); bing.cancel(); setActive(null); }, [gsc, bing]);
+  const cancel = useCallback(() => { gsc.cancel(); bing.cancel(); setActive(null); }, [gsc.cancel, bing.cancel]);
 
   return { gsc, bing, active, run, cancel };
 }

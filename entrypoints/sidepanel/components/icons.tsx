@@ -1,4 +1,3 @@
-// entrypoints/sidepanel/components/icons.tsx
 interface IconProps { size?: number; }
 
 /** 几何放射星形 — header 与品牌位使用，色取自父级 currentColor（珊瑚）。 */

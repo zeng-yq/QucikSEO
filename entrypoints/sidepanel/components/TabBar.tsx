@@ -1,4 +1,3 @@
-// entrypoints/sidepanel/components/TabBar.tsx
 export type Tab = 'site' | 'keyword';
 
 const TABS: { key: Tab; label: string }[] = [

@@ -9,7 +9,7 @@ describe('ProjectModal', () => {
     fireEvent.change(screen.getByPlaceholderText('example.com'), { target: { value: 'modal-test.com' } });
     fireEvent.click(screen.getByText('添加'));
     const item = await screen.findByText('modal-test.com');
-    expect(item).toBeTruthy();
+    expect(item).toBeInTheDocument();
   });
   it('遮罩点击触发 onClose', async () => {
     const onClose = vi.fn();

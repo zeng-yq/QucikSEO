@@ -9,6 +9,7 @@ describe('useProjects 跨视图同步', () => {
     const b = renderHook(() => useProjects());
     await act(async () => { await a.result.current.add('sync-test.com'); });
     // storage.set 已触发 onChanged → 两个实例都应刷新
+    // 注意：a 靠 add().then(refresh) 刷新；b 才真正验证 onChanged 跨实例同步
     expect(a.result.current.projects.some((p) => p.domain === 'sync-test.com')).toBe(true);
     expect(b.result.current.projects.some((p) => p.domain === 'sync-test.com')).toBe(true);
   });

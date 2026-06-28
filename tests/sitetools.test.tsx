@@ -12,17 +12,20 @@ vi.mock('../entrypoints/sidepanel/hooks/useSubmitOrchestrator', () => ({
 
 import SiteTools from '../entrypoints/sidepanel/pages/SiteTools';
 
+// flush 排空 useSite/useProjects 异步 refresh，避免 act warning
+const flush = () => act(async () => {});
+
 describe('SiteTools', () => {
   it('点击「网站提交」进入提交子面板（出现返回）', async () => {
     render(<SiteTools />);
     fireEvent.click(screen.getByText('网站提交'));
-    expect(await screen.findByText('返回')).toBeTruthy();
+    expect(await screen.findByText('返回')).toBeInTheDocument();
   });
   it('选择有效网站后，点击 robots.txt 打开新标签', async () => {
     const createSpy = vi.spyOn(chrome.tabs, 'create').mockResolvedValue({ id: 1 } as never);
     render(<SiteTools />);
     // 等待 useSite/useProjects 异步 refresh 落定，避免 act warning
-    await act(async () => { /* flush async refresh */ });
+    await flush();
     // 在网站选择器输入有效域名
     const input = screen.getByPlaceholderText('example.com') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'example.com' } });
@@ -35,7 +38,7 @@ describe('SiteTools', () => {
   it('未选网站时 robots.txt 禁用', async () => {
     render(<SiteTools />);
     // 等待 useSite/useProjects 异步 refresh 落定，避免 act warning
-    await act(async () => { /* flush async refresh */ });
+    await flush();
     const robots = screen.getByText('robots.txt').closest('[role="button"], .tool-card');
     expect(robots?.getAttribute('aria-disabled')).toBe('true');
   });

@@ -1,6 +1,5 @@
 import 'fake-indexeddb/auto';
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
 
 // jsdom 不实现 Element.prototype.scrollIntoView，LogPanel 等自动滚动组件的 useEffect 会调用它。
 // polyfill 为 no-op，保证渲染不抛错。

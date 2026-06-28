@@ -1,4 +1,3 @@
-// entrypoints/sidepanel/components/Combobox.tsx
 import { useState } from 'react';
 import { IconSettings } from './icons';
 

@@ -1,4 +1,3 @@
-// entrypoints/sidepanel/components/Header.tsx
 import { Logo } from './icons';
 
 export default function Header() {

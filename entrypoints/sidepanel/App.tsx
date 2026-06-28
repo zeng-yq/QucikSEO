@@ -1,4 +1,3 @@
-// entrypoints/sidepanel/App.tsx
 import { useState } from 'react';
 import Header from './components/Header';
 import TabBar, { type Tab } from './components/TabBar';

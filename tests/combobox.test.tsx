@@ -8,8 +8,8 @@ describe('Combobox', () => {
     const { container } = render(<Combobox value="" options={['example.com', 'shop.example.com', 'other.io']} onChange={() => {}} />);
     const input = container.querySelector('input') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'example' } });
-    expect(screen.getByText('example.com')).toBeTruthy();
-    expect(screen.getByText('shop.example.com')).toBeTruthy();
+    expect(screen.getByText('example.com')).toBeInTheDocument();
+    expect(screen.getByText('shop.example.com')).toBeInTheDocument();
     expect(screen.queryByText('other.io')).toBeNull();
   });
   it('点击建议触发 onChange', () => {

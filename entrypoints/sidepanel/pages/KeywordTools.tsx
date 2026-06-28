@@ -1,4 +1,3 @@
-// entrypoints/sidepanel/pages/KeywordTools.tsx
 import AhrefsTool from './AhrefsTool';
 
 export default function KeywordTools() {

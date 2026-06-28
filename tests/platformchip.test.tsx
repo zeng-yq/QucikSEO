@@ -13,6 +13,6 @@ describe('PlatformChip', () => {
   });
   it('checked 时带 is-active 类', () => {
     const { container } = render(<PlatformChip label="Bing" icon={<span />} checked onToggle={() => {}} />);
-    expect(container.querySelector('.platform-chip.is-active')).toBeTruthy();
+    expect(container.querySelector('.platform-chip.is-active')).toBeInTheDocument();
   });
 });

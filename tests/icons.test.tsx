@@ -7,7 +7,7 @@ describe('icons', () => {
   for (const [name, Comp] of Object.entries(all)) {
     it(`${name} 渲染一个 svg`, () => {
       const { container } = render(<Comp />);
-      expect(container.querySelector('svg')).toBeTruthy();
+      expect(container.querySelector('svg')).toBeInTheDocument();
     });
   }
   it('Logo 接受 size', () => {

@@ -14,10 +14,10 @@ import App from '../entrypoints/sidepanel/App';
 describe('App', () => {
   it('默认显示网站工具板块，切到关键词工具显示 Ahrefs 表单', () => {
     render(<App />);
-    expect(screen.getByText('网站工具')).toBeTruthy();
-    expect(screen.getByText('网站提交')).toBeTruthy();
+    expect(screen.getByText('网站工具')).toBeInTheDocument();
+    expect(screen.getByText('网站提交')).toBeInTheDocument();
     fireEvent.click(screen.getByText('关键词工具'));
-    expect(screen.getByText('关键词工具', { selector: 'h2' })).toBeTruthy();
-    expect(screen.getByPlaceholderText('如 apple')).toBeTruthy();
+    expect(screen.getByText('关键词工具', { selector: 'h2' })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('如 apple')).toBeInTheDocument();
   });
 });

@@ -1,4 +1,3 @@
-// entrypoints/sidepanel/components/PlatformChip.tsx
 export interface PlatformChipProps {
   label: string;
   icon: React.ReactNode;

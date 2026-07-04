@@ -24,4 +24,23 @@ describe('QuickSearchTool', () => {
     expect((spy.mock.calls[0][0].url as string).startsWith('https://www.google.com/search?q=apple')).toBe(true);
     expect((spy.mock.calls[1][0].url as string).startsWith('https://cn.bing.com/search?q=apple')).toBe(true);
   });
+
+  it('渲染「搜索位置」下拉，默认选中美国', () => {
+    const { container } = render(<QuickSearchTool keyword="apple" />);
+    const select = container.querySelector('select') as HTMLSelectElement;
+    expect(select).toBeTruthy();
+    expect(select.value).toBe('US');
+  });
+
+  it('切换下拉写入 kw-tools:geo', async () => {
+    const { container } = render(<QuickSearchTool keyword="apple" />);
+    const select = container.querySelector('select') as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: 'DE' } });
+    const items = (await chrome.storage.local.get('kw-tools:geo')) as Record<string, { code: string }>;
+    expect(items['kw-tools:geo'].code).toBe('DE');
+
+    fireEvent.change(select, { target: { value: 'OFF' } });
+    const items2 = (await chrome.storage.local.get('kw-tools:geo')) as Record<string, { code: string }>;
+    expect(items2['kw-tools:geo'].code).toBe('OFF');
+  });
 });

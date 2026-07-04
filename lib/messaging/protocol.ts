@@ -26,3 +26,16 @@ export const BING_PORT_NAME = 'bing-runner';
 export function createBingPort(): chrome.runtime.Port {
   return chrome.runtime.connect({ name: BING_PORT_NAME });
 }
+
+import type { SitemapRequest, SitemapEvent } from './types';
+
+/** background 与 side panel 之间约定的 sitemap-fetcher port 名。 */
+export const SITEMAP_PORT_NAME = 'sitemap-fetcher';
+
+/**
+ * 建立到 background 的 sitemap-fetcher port。
+ * 调用方负责 onMessage.addListener 接收 SitemapEvent、postMessage 发送 SitemapRequest。
+ */
+export function createSitemapPort(): chrome.runtime.Port {
+  return chrome.runtime.connect({ name: SITEMAP_PORT_NAME });
+}

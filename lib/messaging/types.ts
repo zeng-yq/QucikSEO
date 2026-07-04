@@ -109,3 +109,30 @@ export interface BingDone {
 }
 
 export type BingEvent = BingState | BingLog | BingDone;
+
+// ---------------------------------------------------------------------------
+// sitemap 抓取协议（side panel UI ↔ background）。
+// UI 经 sitemap-fetcher port 发 SITEMAP_FETCH；background 抓取解析后推 RESULT 或 ERROR。
+// ---------------------------------------------------------------------------
+
+/** 请求抓取并递归解析一个 sitemap 入口。 */
+export interface SitemapFetchRequest {
+  type: 'SITEMAP_FETCH';
+  sitemapUrl: string;
+}
+
+/** 抓取成功：返回同 host 全量 <loc> 与统计。 */
+export interface SitemapResult {
+  type: 'SITEMAP_RESULT';
+  urls: string[];
+  stats: { indexDepth: number; truncated: boolean };
+}
+
+/** 抓取/解析失败：带可读 message 供 UI 日志展示。 */
+export interface SitemapError {
+  type: 'SITEMAP_ERROR';
+  message: string;
+}
+
+export type SitemapRequest = SitemapFetchRequest;
+export type SitemapEvent = SitemapResult | SitemapError;

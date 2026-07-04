@@ -5,7 +5,6 @@ import { fetchSitemapViaBackground, type SitemapFetched } from '@lib/messaging/s
 import { mergeDiscovered } from '@lib/storage/discovered';
 import { getSubmissions, appendSubmissions, type Platform } from '@lib/storage/submissions';
 import { pickRandom } from '@lib/submit/pick';
-import type { SubmitResult } from '@lib/messaging/types';
 
 export interface Platforms { gsc: boolean; bing: boolean; }
 
@@ -73,6 +72,8 @@ export function useSubmitOrchestrator() {
       const collected: ReportItem[] = [];
 
       // ⑥/⑦ 逐平台提交 + 落库
+      // early-DONE：若 background 在任何 STATE 之前就发 GSC_DONE/BING_DONE（页面加载超时 / 登录失败 / 权限失败），
+      // start 将 resolve 成 []，此处 results 为空，因此不会向 submissions 追加、也不会写报告——这是有意的（无操作即无记录），错误信号由该平台 LogPanel 承载。
       if (platforms.gsc) {
         setActive('gsc');
         try {

@@ -27,8 +27,6 @@ export function createBingPort(): chrome.runtime.Port {
   return chrome.runtime.connect({ name: BING_PORT_NAME });
 }
 
-import type { SitemapRequest, SitemapEvent } from './types';
-
 /** background 与 side panel 之间约定的 sitemap-fetcher port 名。 */
 export const SITEMAP_PORT_NAME = 'sitemap-fetcher';
 

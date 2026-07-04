@@ -30,6 +30,7 @@ import { getSettings } from '../lib/storage/settings';
 import { GSC_PORT_NAME, BING_PORT_NAME, SITEMAP_PORT_NAME } from '../lib/messaging/protocol';
 import type { GscRequest, GscEvent, BingRequest, BingEvent, SitemapRequest, SitemapEvent } from '../lib/messaging/types';
 import { handleSitemapRequest } from '../lib/sitemap/handler';
+import { getGeoPref, applyGeo, resolveGeo, GEO_STORAGE_KEY, DEFAULT_GEO_CODE, type GeoCode } from '../lib/quicksearch/geo';
 
 /**
  * GSC SPA 加载完成的等待超时。
@@ -68,6 +69,25 @@ const BING_LOGIN_CHECK_EXPR =
 export default defineBackground(() => {
   // 点击工具栏图标打开 sidepanel（MV3 sidePanel API）。失败静默：旧 Chrome 无此 API。
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+
+  /**
+   * Google 搜索地理位置伪装：启动/安装时按 storage 重建 sessionRules；
+   * UI 切换（写 'kw-tools:geo'）→ storage.onChanged → 实时增删规则 + 清 UULE。
+   * 默认 storage 为空 → getGeoPref 返回 'US' → 即默认开启美国。
+   * 设计：docs/superpowers/specs/2026-07-04-google-search-geo-design.md
+   */
+  chrome.runtime.onStartup.addListener(initGeo);
+  chrome.runtime.onInstalled.addListener(initGeo);
+  async function initGeo(): Promise<void> {
+    const { code } = await getGeoPref();
+    await applyGeo(resolveGeo(code));
+  }
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local' || !changes[GEO_STORAGE_KEY]) return;
+    const code = (changes[GEO_STORAGE_KEY].newValue as { code?: GeoCode } | undefined)?.code ?? DEFAULT_GEO_CODE;
+    void applyGeo(resolveGeo(code));
+  });
 
   /** 取消标志；GSC_CANCEL 置 true，runBatch 下一条 URL 前自检。 */
   let stopRequested = false;

@@ -1,38 +1,35 @@
 import { useEffect, useRef, useState } from 'react';
-import Button from '../components/Button';
 import TextInput from '../components/TextInput';
-import LogPanel from '../components/LogPanel';
-import PlatformChip from '../components/PlatformChip';
-import ProgressPanel from '../components/ProgressPanel';
-import { IconBack, GscMark, BingMark } from '../components/icons';
+import ProgressDashboard from '../components/ProgressDashboard';
+import RunningOverlay from '../components/RunningOverlay';
+import BatchReportCard from '../components/BatchReportCard';
+import SubmitBar from '../components/SubmitBar';
+import { IconBack } from '../components/icons';
 import { useSubmitOrchestrator } from '../hooks/useSubmitOrchestrator';
 import { isValidDomain } from '@lib/storage/projects';
 import { normalizeOrigin } from '@lib/seo-files/url';
-import { classifyResult } from '@lib/submit/reasons';
 import type { Site } from '../hooks/useSite';
 
 function defaultSitemapUrl(domain: string): string {
   try { return `${normalizeOrigin(domain)}/sitemap.xml`; } catch { return ''; }
 }
 
-type Tab = 'submit' | 'progress';
-
 export default function SubmitPanel({ site, onBack }: { site: Site; onBack: () => void }) {
   const orch = useSubmitOrchestrator();
-  const [tab, setTab] = useState<Tab>('submit');
   const [sitemapUrl, setSitemapUrl] = useState(() => defaultSitemapUrl(site.domain));
   const [gsc, setGsc] = useState(true);
   const [bing, setBing] = useState(true);
   const [error, setError] = useState('');
   const dirtyRef = useRef(false);
 
-  // domain 变化时重置默认值（除非用户手改过）
   useEffect(() => {
     if (!dirtyRef.current) setSitemapUrl(defaultSitemapUrl(site.domain));
   }, [site.domain]);
 
-  const busy = orch.gsc.state.running || orch.bing.state.running || orch.active === 'sitemap';
-  const ready = (gsc || bing) && !busy;
+  const running = orch.active !== null;
+  const busy = orch.gsc.state.running || orch.bing.state.running || orch.active !== null;
+  const ready = (gsc || bing) && !busy && isValidDomain(site.domain) && !!sitemapUrl.trim();
+  const showReport = !running && orch.report.length > 0;
 
   function submit() {
     if (!isValidDomain(site.domain)) { setError('请先选择或填写有效网站（如 example.com）'); return; }
@@ -41,90 +38,47 @@ export default function SubmitPanel({ site, onBack }: { site: Site; onBack: () =
     void orch.run({ gsc, bing }, site.domain.trim(), sitemapUrl.trim());
   }
 
-  const successes = orch.report.filter((r) => classifyResult(r) === 'ok');
-  const failures = orch.report.filter((r) => classifyResult(r) === 'failed');
-  const skips = orch.report.filter((r) => classifyResult(r) === 'skipped');
-
   return (
-    <div style={{ padding: 'var(--space-md)' }}>
-      <button type="button" onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, border: 'none', background: 'none', color: 'var(--color-muted)', cursor: 'pointer', fontSize: 13, marginBottom: 12, padding: 0 }}>
-        <IconBack size={14} /> 返回
-      </button>
+    <div style={{ padding: 'var(--space-md)', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      {!running && (
+        <button type="button" onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, border: 'none', background: 'none', color: 'var(--color-muted)', cursor: 'pointer', fontSize: 13, marginBottom: 12, padding: 0 }}>
+          <IconBack size={14} /> 返回
+        </button>
+      )}
       <h2 style={{ fontSize: 17, marginBottom: 'var(--space-md)' }}>网站提交</h2>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 'var(--space-md)' }}>
-        <button type="button" className={`platform-chip${tab === 'submit' ? ' is-active' : ''}`} onClick={() => setTab('submit')}>提交</button>
-        <button type="button" className={`platform-chip${tab === 'progress' ? ' is-active' : ''}`} onClick={() => setTab('progress')}>查询进度</button>
-      </div>
-
-      <label style={{ display: 'block', fontSize: 12, color: 'var(--color-muted)', marginBottom: 4 }}>站点地图（sitemap.xml）</label>
-      <TextInput value={sitemapUrl} placeholder="https://example.com/sitemap.xml" onChange={(e) => { dirtyRef.current = true; setSitemapUrl(e.target.value); }} />
-      <div style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 4 }}>
-        将自动过滤登录 / 注册 / 隐私 / 条款 / 账号等低价值链接，不参与提交。
-      </div>
-
-      {tab === 'submit' && (
+      {running ? (
+        <RunningOverlay orch={orch} gscSelected={gsc} bingSelected={bing} onCancel={orch.cancel} />
+      ) : (
         <>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-muted)', marginBottom: 4 }}>站点地图（sitemap.xml）</label>
+          <TextInput value={sitemapUrl} placeholder="https://example.com/sitemap.xml" onChange={(e) => { dirtyRef.current = true; setSitemapUrl(e.target.value); }} />
           {error && <div style={{ color: 'var(--color-error)', fontSize: 12, marginTop: 6 }}>{error}</div>}
-
-          <label style={{ display: 'block', fontSize: 12, color: 'var(--color-muted)', marginTop: 'var(--space-md)', marginBottom: 6 }}>目标平台</label>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 'var(--space-md)' }}>
-            <PlatformChip label="GSC" icon={<GscMark />} checked={gsc} onToggle={() => setGsc((v) => !v)} />
-            <PlatformChip label="Bing" icon={<BingMark />} checked={bing} onToggle={() => setBing((v) => !v)} />
+          <div style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 4 }}>
+            将自动过滤登录 / 注册 / 隐私 / 条款 / 账号等低价值链接，不参与提交。
           </div>
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button onClick={submit} disabled={!ready} style={{ flex: 1 }}>{busy ? '提交中…' : '一次提交'}</Button>
-            {busy && <Button variant="secondary" onClick={orch.cancel}>取消</Button>}
-          </div>
-
-          <div style={{ marginTop: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {orch.logs.length > 0 && (
-              <div>
-                <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4 }}>▍系统</div>
-                <LogPanel logs={orch.logs} />
-              </div>
-            )}
-            {(gsc || orch.gsc.logs.length > 0) && (
-              <div>
-                <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4 }}>▍GSC{orch.gsc.state.total > 0 ? `  ${orch.gsc.state.done}/${orch.gsc.state.total}` : ''}</div>
-                <LogPanel logs={orch.gsc.logs} />
-              </div>
-            )}
-            {(bing || orch.bing.logs.length > 0) && (
-              <div>
-                <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 4 }}>▍Bing{orch.bing.state.total > 0 ? `  ${orch.bing.state.done}/${orch.bing.state.total}` : ''}</div>
-                <LogPanel logs={orch.bing.logs} />
-              </div>
-            )}
-          </div>
-
-          {orch.report.length > 0 && (
-            <div style={{ marginTop: 'var(--space-md)', fontSize: 12, lineHeight: 1.6 }}>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                本批 {orch.report.length} 个 · 成功 {successes.length} · 失败 {failures.length} · 跳过 {skips.length}
-              </div>
-              {failures.length > 0 && (
-                <div style={{ color: 'var(--color-error)', marginBottom: 6 }}>
-                  <div style={{ fontWeight: 600 }}>失败：</div>
-                  {failures.map((r) => (<div key={`${r.platform}-${r.url}`}>· {r.url}（{r.platform}{r.reason ? `：${r.reason}` : ''}）</div>))}
-                </div>
-              )}
-              {successes.length > 0 && (
-                <div style={{ color: 'var(--color-muted)' }}>
-                  <div style={{ fontWeight: 600, color: 'var(--color-ink)' }}>成功：</div>
-                  {successes.map((r) => (<div key={`${r.platform}-${r.url}`}>· {r.url}（{r.platform}）</div>))}
-                </div>
-              )}
+          {showReport && (
+            <div style={{ marginTop: 'var(--space-md)' }}>
+              <BatchReportCard report={orch.report} onClose={orch.clearReport} />
             </div>
           )}
-        </>
-      )}
 
-      {tab === 'progress' && (
-        <div style={{ marginTop: 'var(--space-md)' }}>
-          <ProgressPanel domain={site.domain.trim()} sitemapUrl={sitemapUrl.trim()} />
-        </div>
+          <div style={{ marginTop: 'var(--space-md)', flex: 1 }}>
+            <ProgressDashboard domain={site.domain.trim()} sitemapUrl={sitemapUrl.trim()} />
+          </div>
+
+          <SubmitBar
+            gsc={gsc}
+            bing={bing}
+            onToggleGsc={() => setGsc((v) => !v)}
+            onToggleBing={() => setBing((v) => !v)}
+            onSubmit={submit}
+            onCancel={orch.cancel}
+            busy={busy}
+            ready={ready}
+          />
+        </>
       )}
     </div>
   );

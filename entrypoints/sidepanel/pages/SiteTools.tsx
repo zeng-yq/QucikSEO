@@ -6,8 +6,8 @@ import SubmitPanel from './SubmitPanel';
 import { IconSubmit, IconRobots, IconSitemap } from '../components/icons';
 import { useSite } from '../hooks/useSite';
 import { useProjects } from '../hooks/useProjects';
-import { buildSeoFileUrl, type SeoFile } from '@lib/seo-files/url';
 import { isValidDomain } from '@lib/storage/projects';
+import { SITE_TOOLS } from '@lib/site-tools/tools';
 
 export default function SiteTools() {
   const { site, setSite } = useSite();
@@ -18,10 +18,10 @@ export default function SiteTools() {
   const domains = projects.map((p) => p.domain);
   const hasSite = isValidDomain(site.domain);
 
-  function openSeo(file: SeoFile) {
+  function openTool(buildUrl: (domain: string) => string) {
     if (!hasSite) return;
-    try { chrome.tabs.create({ url: buildSeoFileUrl(site.domain, file) }); }
-    catch { /* buildSeoFileUrl 校验失败静默（已由 hasSite 拦截） */ }
+    try { chrome.tabs.create({ url: buildUrl(site.domain) }); }
+    catch { /* buildUrl 校验失败静默（已由 hasSite 拦截） */ }
   }
 
   if (view === 'submit') return <SubmitPanel site={site} onBack={() => setView('list')} />;
@@ -33,15 +33,24 @@ export default function SiteTools() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 'var(--space-lg)' }}>
         <ToolCard icon={<IconSubmit />} title="网站提交" subtitle="GSC · Bing" onClick={() => setView('submit')} />
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ flex: 1 }}>
-            <ToolCard icon={<IconRobots />} title="robots.txt" onClick={hasSite ? () => openSeo('robots.txt') : undefined} disabled={!hasSite} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <ToolCard icon={<IconSitemap />} title="sitemap.xml" onClick={hasSite ? () => openSeo('sitemap.xml') : undefined} disabled={!hasSite} />
-          </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {SITE_TOOLS.map((t) => {
+            const icon = t.icon === 'robots' ? <IconRobots /> : t.icon === 'sitemap' ? <IconSitemap /> : undefined;
+            return (
+              <ToolCard
+                key={t.id}
+                icon={icon}
+                logo={t.logo}
+                title={t.name}
+                onClick={hasSite ? () => openTool(t.buildUrl) : undefined}
+                disabled={!hasSite}
+              />
+            );
+          })}
         </div>
-        {!hasSite && <div style={{ color: 'var(--color-muted)', fontSize: 12 }}>请先选择或填写网站以打开 SEO 文件</div>}
+
+        {!hasSite && <div style={{ color: 'var(--color-muted)', fontSize: 12 }}>请先选择或填写网站以使用工具</div>}
       </div>
 
       {modalOpen && <ProjectModal onClose={() => setModalOpen(false)} />}

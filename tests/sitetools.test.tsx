@@ -43,4 +43,43 @@ describe('SiteTools', () => {
     const robots = screen.getByText('robots.txt').closest('[role="button"], .tool-card');
     expect(robots?.getAttribute('aria-disabled')).toBe('true');
   });
+  it('渲染 6 个新增工具卡片', async () => {
+    render(<SiteTools />);
+    await flush();
+    expect(screen.getByText('Backlink Checker')).toBeInTheDocument();
+    expect(screen.getByText('Website Authority Checker')).toBeInTheDocument();
+    expect(screen.getByText('Google Search Console')).toBeInTheDocument();
+    expect(screen.getByText('Google Analytics')).toBeInTheDocument();
+    expect(screen.getByText('Microsoft Clarity')).toBeInTheDocument();
+    expect(screen.getByText('PageSpeed Insights')).toBeInTheDocument();
+  });
+  it('选网站后点 Backlink Checker 打开带 input 与 mode=subdomains 的链接', async () => {
+    const spy = vi.spyOn(chrome.tabs, 'create').mockResolvedValue({ id: 1 } as never);
+    render(<SiteTools />);
+    await flush();
+    const input = screen.getByPlaceholderText('example.com') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'vercel.com' } });
+    fireEvent.click(screen.getByText('Backlink Checker'));
+    expect(spy).toHaveBeenCalled();
+    const url = spy.mock.calls[0][0].url as string;
+    expect(url).toBe('https://ahrefs.com/backlink-checker/?input=vercel.com&mode=subdomains');
+    spy.mockRestore();
+  });
+  it('选网站后点 Google Search Console 打开直接链接（无查询参数）', async () => {
+    const spy = vi.spyOn(chrome.tabs, 'create').mockResolvedValue({ id: 1 } as never);
+    render(<SiteTools />);
+    await flush();
+    const input = screen.getByPlaceholderText('example.com') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'example.com' } });
+    fireEvent.click(screen.getByText('Google Search Console'));
+    expect(spy).toHaveBeenCalled();
+    expect(spy.mock.calls[0][0].url).toBe('https://search.google.com/search-console');
+    spy.mockRestore();
+  });
+  it('未选网站时 PageSpeed Insights 禁用', async () => {
+    render(<SiteTools />);
+    await flush();
+    const card = screen.getByText('PageSpeed Insights').closest('[role="button"], .tool-card');
+    expect(card?.getAttribute('aria-disabled')).toBe('true');
+  });
 });

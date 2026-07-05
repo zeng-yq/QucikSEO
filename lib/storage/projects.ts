@@ -4,6 +4,25 @@ const DOMAIN_RE = /^([a-z0-9-]+\.)+[a-z]{2,}$/i;
 
 export function isValidDomain(d: string): boolean { return DOMAIN_RE.test(d.trim()); }
 
+/**
+ * 把用户输入清洗为裸域名主机名（小写）。剥离 scheme / path / query / fragment /
+ * userinfo / 端口。输入含非 ASCII（中文域名 / IDN）或解析失败时返回空串，
+ * 交由 isValidDomain 判定无效并触发提示。
+ *
+ * 实现：补 https:// 前缀让 URL 能解析，取 hostname（不含端口；host 才含端口）。
+ */
+export function normalizeDomain(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return '';
+  if (/[^\x00-\x7F]/.test(trimmed)) return '';        // 非 ASCII → 不支持 IDN
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    return new URL(withScheme).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
 export async function getProjects(): Promise<Project[]> {
   const items = await chrome.storage.local.get(KEY);
   return (items[KEY] as Project[] | undefined) ?? [];

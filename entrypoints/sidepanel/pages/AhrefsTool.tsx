@@ -42,7 +42,7 @@ export default function AhrefsTool({ keyword }: Props) {
       logo={<AhrefsLogo size={18} />}
       title="Keyword Difficulty Checker"
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 'var(--space-xs)', alignItems: 'stretch' }}>
         <Select
           value={country}
           options={options}
@@ -50,9 +50,9 @@ export default function AhrefsTool({ keyword }: Props) {
             if (e.target.value === '__custom') { setCustom(true); setCountry(''); }
             else { setCustom(false); setCountry(e.target.value); }
           }}
-          style={{ flex: 1, width: 'auto' }}
+          style={{ minWidth: 0 }}
         />
-        <Button onClick={open} disabled={canOpen} style={{ flexShrink: 0 }}>查询</Button>
+        <Button onClick={open} disabled={canOpen} style={{ minWidth: 0, width: '100%' }}>点击查询</Button>
       </div>
       {custom && (
         <TextInput

@@ -31,10 +31,10 @@ export default function QuickSearchTool({ keyword }: Props) {
   // minWidth:0 解除 grid item 默认 min-content 下限,避免内容把列撑宽。
   return (
     <ToolPanel logo={<QuickSearchLogo size={18} />} title="搜索引擎查询">
-      {/* 第 1 行:搜索定位 + Google 按钮(geo 仅作用于 Google) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 'var(--space-sm)', alignItems: 'end' }}>
+      {/* 第 1 行:搜索定位下拉 + Google 按钮(geo 仅作用于 Google)。标签独占一行,避免窄列换行。 */}
+      <div style={{ fontSize: 11, color: 'var(--color-muted)', marginBottom: 4, whiteSpace: 'nowrap' }}>搜索定位(仅对 Google 搜索有效)</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 'var(--space-sm)' }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 11, color: 'var(--color-muted)', marginBottom: 4 }}>搜索定位(仅对 Google 搜索有效)</div>
           <Select value={geoCode} options={geoOptions} onChange={onGeoChange} />
         </div>
         <Button

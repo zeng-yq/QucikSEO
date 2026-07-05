@@ -8,7 +8,7 @@ describe('GoogleTrendsTool', () => {
   it('渲染标题与搜索按钮,关键词非空时可用', () => {
     render(<GoogleTrendsTool keyword="apple" />);
     expect(screen.getByText('Google Trends')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '搜索' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '点击查询' })).toBeEnabled();
   });
   it('不再渲染「谷歌趋势」副标题与三个小标题', () => {
     render(<GoogleTrendsTool keyword="apple" />);
@@ -19,12 +19,12 @@ describe('GoogleTrendsTool', () => {
   });
   it('关键词为空时按钮禁用', () => {
     render(<GoogleTrendsTool keyword="" />);
-    expect(screen.getByRole('button', { name: '搜索' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '点击查询' })).toBeDisabled();
   });
   it('点击搜索以新标签打开趋势链接,含主词 apple', () => {
     const spy = vi.spyOn(chrome.tabs, 'create');
     render(<GoogleTrendsTool keyword="apple" />);
-    fireEvent.click(screen.getByRole('button', { name: '搜索' }));
+    fireEvent.click(screen.getByRole('button', { name: '点击查询' }));
     expect(spy).toHaveBeenCalledTimes(1);
     const url = spy.mock.calls[0][0].url as string;
     expect(url.startsWith('https://trends.google.com/explore')).toBe(true);

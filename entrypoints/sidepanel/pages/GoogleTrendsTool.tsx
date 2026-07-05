@@ -41,15 +41,15 @@ export default function GoogleTrendsTool({ keyword }: Props) {
   return (
     <ToolPanel logo={<GoogleTrendsLogo size={18} />} title="Google Trends">
       {/* 第 1 行:天数 + 地区(无标题) */}
-      <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 'var(--space-sm)' }}>
+        <div style={{ minWidth: 0 }}>
           <Select
             value={date}
             options={TRENDS_DATE_RANGES.map((d) => ({ value: d.value, label: d.label }))}
             onChange={(e) => { setDate(e.target.value); persist({ date: e.target.value }); }}
           />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ minWidth: 0 }}>
           <Select
             value={geo}
             options={TRENDS_GEOS.map((g) => ({ value: g.value, label: g.label }))}
@@ -58,8 +58,8 @@ export default function GoogleTrendsTool({ keyword }: Props) {
         </div>
       </div>
       {/* 第 2 行:对比词 + 搜索按钮(无标题) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)', marginTop: 'var(--space-sm)' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+        <div style={{ minWidth: 0 }}>
           <Combobox
             value={compare}
             options={COMPARE_PRESETS}
@@ -67,7 +67,7 @@ export default function GoogleTrendsTool({ keyword }: Props) {
             onChange={(v) => { setCompare(v); persist({ compare: v }); }}
           />
         </div>
-        <Button onClick={open} disabled={!keyword.trim()} style={{ flexShrink: 0 }}>搜索</Button>
+        <Button onClick={open} disabled={!keyword.trim()} style={{ minWidth: 0, width: '100%' }}>点击查询</Button>
       </div>
     </ToolPanel>
   );

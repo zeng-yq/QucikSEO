@@ -10,14 +10,6 @@ const STORAGE_KEY = 'ahrefs:last';
 interface Last { country: string; }
 interface Props { keyword: string; }
 
-const rowLabelStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: 'var(--color-muted)',
-  width: 44,
-  flexShrink: 0,
-  paddingTop: 7,
-};
-
 export default function AhrefsTool({ keyword }: Props) {
   const [country, setCountry] = useState('us');
   const [custom, setCustom] = useState(false);
@@ -49,11 +41,9 @@ export default function AhrefsTool({ keyword }: Props) {
     <ToolPanel
       logo={<AhrefsLogo size={18} />}
       title="Ahrefs"
-      subtitle="关键词难度查询"
-      action={<Button onClick={open} disabled={canOpen}>打开查询</Button>}
+      subtitle="Keyword Difficulty Checker"
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}>
-        <span style={rowLabelStyle}>国家</span>
         <Select
           value={country}
           options={options}
@@ -63,6 +53,7 @@ export default function AhrefsTool({ keyword }: Props) {
           }}
           style={{ flex: 1, width: 'auto' }}
         />
+        <Button onClick={open} disabled={canOpen} style={{ flexShrink: 0 }}>查询</Button>
       </div>
       {custom && (
         <TextInput

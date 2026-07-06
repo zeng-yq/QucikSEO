@@ -95,49 +95,56 @@ export default defineBackground(() => {
     msg: { domain: string; urls: string[] },
     shouldStop: () => boolean,
   ): Promise<void> {
-    const { gscCredentials } = await getSettings();
-    if (!gscCredentials) {
-      emit(port, { type: 'GSC_LOG', level: 'error', phase: 'system', message: '未配置 GSC 服务账号密钥，请在下方粘贴' });
-      emit(port, { type: 'GSC_DONE', ok: 0, failed: 0, skipped: msg.urls.length });
-      return;
-    }
-
-    let creds: ServiceAccount;
     try {
-      creds = parseServiceAccount(gscCredentials);
+      const { gscCredentials } = await getSettings();
+      if (!gscCredentials) {
+        emit(port, { type: 'GSC_LOG', level: 'error', phase: 'system', message: '未配置 GSC 服务账号密钥，请在下方粘贴' });
+        emit(port, { type: 'GSC_DONE', ok: 0, failed: 0, skipped: msg.urls.length });
+        return;
+      }
+
+      let creds: ServiceAccount;
+      try {
+        creds = parseServiceAccount(gscCredentials);
+      } catch (e) {
+        emit(port, { type: 'GSC_LOG', level: 'error', phase: 'system', message: `密钥解析失败：${(e as Error).message}` });
+        emit(port, { type: 'GSC_DONE', ok: 0, failed: 0, skipped: msg.urls.length });
+        return;
+      }
+
+      let token: string;
+      try {
+        token = await getAccessToken(creds);
+      } catch (e) {
+        emit(port, { type: 'GSC_LOG', level: 'error', phase: 'system', message: `换取访问令牌失败：${(e as Error).message}` });
+        emit(port, { type: 'GSC_DONE', ok: 0, failed: 0, skipped: msg.urls.length });
+        return;
+      }
+
+      emit(port, { type: 'GSC_STATE', state: 'running', total: msg.urls.length, done: 0, results: [] });
+      emit(port, { type: 'GSC_LOG', level: 'info', phase: 'system', message: `提交 ${msg.urls.length} 条到 Indexing API…` });
+
+      const { results, ok, skipped } = await submitBatch(token, msg.urls, {
+        shouldStop,
+        onProgress: (s) => emit(port, {
+          type: 'GSC_STATE',
+          state: 'running',
+          total: s.total,
+          done: s.done,
+          currentUrl: s.currentUrl,
+          results: s.results,
+        }),
+        onLog: (e) => emit(port, { type: 'GSC_LOG', level: e.level, phase: e.phase, message: e.message }),
+      });
+
+      void results; // results 已随 GSC_STATE 推送；GSC_DONE 仅汇总计数
+      emit(port, { type: 'GSC_DONE', ok, failed: 0, skipped });
     } catch (e) {
-      emit(port, { type: 'GSC_LOG', level: 'error', phase: 'system', message: `密钥解析失败：${(e as Error).message}` });
+      // 兜底：保证契约（types.ts GscDone「无论何种情况都发一次」）。
+      // submitBatch 内部已 catch fetch 错误，这里只兜未来/边缘异常，避免 GSC_DONE 丢失导致前端卡死。
+      emit(port, { type: 'GSC_LOG', level: 'error', phase: 'system', message: `提交异常：${(e as Error).message ?? String(e)}` });
       emit(port, { type: 'GSC_DONE', ok: 0, failed: 0, skipped: msg.urls.length });
-      return;
     }
-
-    let token: string;
-    try {
-      token = await getAccessToken(creds);
-    } catch (e) {
-      emit(port, { type: 'GSC_LOG', level: 'error', phase: 'system', message: `换取访问令牌失败：${(e as Error).message}` });
-      emit(port, { type: 'GSC_DONE', ok: 0, failed: 0, skipped: msg.urls.length });
-      return;
-    }
-
-    emit(port, { type: 'GSC_STATE', state: 'running', total: msg.urls.length, done: 0, results: [] });
-    emit(port, { type: 'GSC_LOG', level: 'info', phase: 'system', message: `提交 ${msg.urls.length} 条到 Indexing API…` });
-
-    const { results, ok, skipped } = await submitBatch(token, msg.urls, {
-      shouldStop,
-      onProgress: (s) => emit(port, {
-        type: 'GSC_STATE',
-        state: 'running',
-        total: s.total,
-        done: s.done,
-        currentUrl: s.currentUrl,
-        results: s.results,
-      }),
-      onLog: (e) => emit(port, { type: 'GSC_LOG', level: e.level, phase: e.phase, message: e.message }),
-    });
-
-    void results; // results 已随 GSC_STATE 推送；GSC_DONE 仅汇总计数
-    emit(port, { type: 'GSC_DONE', ok, failed: 0, skipped });
   }
 
   /** 经 port 推送一个 GscEvent / BingEvent / SitemapEvent；若 port 已断开则静默忽略。 */

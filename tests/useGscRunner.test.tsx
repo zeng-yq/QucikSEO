@@ -3,14 +3,20 @@ import { renderHook, act } from '@testing-library/react';
 
 function mockPort() {
   let msgCb: ((e: any) => void) | null = null;
+  let discCb: (() => void) | null = null;
   const port = {
     postMessage: vi.fn(),
     onMessage: { addListener: (cb: (e: any) => void) => { msgCb = cb; } },
-    onDisconnect: { addListener: () => {} },
+    onDisconnect: { addListener: (cb: () => void) => { discCb = cb; } },
     disconnect: vi.fn(),
   };
   (chrome as any).runtime.connect = vi.fn(() => port);
-  return { port, emit: (e: any) => msgCb!(e) };
+  return {
+    port,
+    emit: (e: any) => msgCb!(e),
+    /** 模拟 background service worker 终止 → port 断开，GSC_DONE 永不到达。 */
+    fireDisconnect: () => { if (discCb) discCb(); },
+  };
 }
 
 describe('useGscRunner', () => {
@@ -27,5 +33,21 @@ describe('useGscRunner', () => {
       resolved = await p;
     });
     expect(resolved).toEqual([{ url: 'https://example.com/a', status: 'ok' }]);
+  });
+
+  it('port 意外断开（SW 终止）时 start 兜底 resolve，避免按钮永久卡在"提交中"', async () => {
+    const { fireDisconnect } = mockPort();
+    const { useGscRunner } = await import('../entrypoints/sidepanel/hooks/useGscRunner');
+    const { result } = renderHook(() => useGscRunner());
+    let done = false;
+    await act(async () => {
+      const p = result.current.start('example.com', ['https://example.com/a']);
+      p.then(() => { done = true; });
+      // background SW 终止 → port 断开，GSC_DONE 永不到达
+      fireDisconnect();
+      await Promise.resolve();
+    });
+    expect(done).toBe(true); // start 不再永久 pending
+    expect(result.current.state.running).toBe(false); // 按钮恢复
   });
 });

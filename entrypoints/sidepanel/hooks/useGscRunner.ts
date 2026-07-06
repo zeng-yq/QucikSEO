@@ -49,6 +49,16 @@ export function useGscRunner() {
         doneRef.current = null;
       }
     });
+    // 兜底：background service worker 在长串行提交期间被终止/重启时，port 会断开、
+    // GSC_DONE 永不到达。若不处理，start() 的 Promise 永久 pending → orchestrator 卡死 →
+    // 按钮永久"提交中"。此处兜底 resolve 已完成的结果并恢复 IDLE，让用户看到中断信号。
+    port.onDisconnect.addListener(() => {
+      if (!doneRef.current) return; // 无进行中的批次（如组件卸载），忽略
+      setState(IDLE);
+      setLogs((prev) => [...prev, { level: 'error', phase: 'system', message: '后台连接中断（service worker 可能已重启），本次提交未完成', ts: Date.now() }]);
+      doneRef.current(latestResults.current);
+      doneRef.current = null;
+    });
     return () => port.disconnect();
   }, []);
 

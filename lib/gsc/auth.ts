@@ -8,7 +8,7 @@
  * 依据：docs/superpowers/specs/2026-07-06-gsc-indexing-api-migration-design.md §5.1
  */
 
-import { getSettings, updateSettings, type Settings } from '../storage/settings';
+import { getSettings, updateSettings } from '../storage/settings';
 
 const SCOPE = 'https://www.googleapis.com/auth/indexing';
 const DEFAULT_TOKEN_URI = 'https://oauth2.googleapis.com/token';
@@ -106,22 +106,15 @@ async function fetchAccessToken(creds: ServiceAccount): Promise<{ accessToken: s
   return { accessToken: data.access_token, expiresIn: data.expires_in };
 }
 
-/** access_token 缓存条目。Task 3 将把此类型正式加入 Settings。 */
-interface GscTokenCache {
-  accessToken: string;
-  expiresAt: number;
-}
-
 /** 取 access_token：命中缓存则返回，否则签 JWT 换新并写缓存。 */
 export async function getAccessToken(creds: ServiceAccount): Promise<string> {
-  // TODO(Task 3): 移除断言——Settings 将正式声明 gscToken?: GscTokenCache
-  const { gscToken } = await getSettings() as Settings & { gscToken?: GscTokenCache };
+  const { gscToken } = await getSettings();
   if (gscToken && gscToken.expiresAt > Date.now() + TOKEN_SAFETY_MARGIN_MS) {
     return gscToken.accessToken;
   }
   const { accessToken, expiresIn } = await fetchAccessToken(creds);
   await updateSettings({
     gscToken: { accessToken, expiresAt: Date.now() + expiresIn * 1000 },
-  } as Partial<Parameters<typeof updateSettings>[0]>);
+  });
   return accessToken;
 }

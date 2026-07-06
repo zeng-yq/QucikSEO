@@ -1,4 +1,11 @@
-export interface Settings { accountIndex: number; indexnowKey?: string; }
+export interface Settings {
+  accountIndex: number;
+  indexnowKey?: string;
+  /** Google Indexing API 服务账号 JSON 整段文本（手动粘贴）。 */
+  gscCredentials?: string;
+  /** access_token 缓存（由 lib/gsc/auth.ts 读写）。 */
+  gscToken?: { accessToken: string; expiresAt: number };
+}
 const KEY = 'settings';
 const DEFAULT: Settings = { accountIndex: 0 };
 

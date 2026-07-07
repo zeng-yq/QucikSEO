@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { submitUrls, reasonFor, groupByHost } from '../lib/indexnow/submit';
+import { submitUrls, reasonFor, groupByHost, verifyKeyFile } from '../lib/indexnow/submit';
 
 beforeEach(() => vi.restoreAllMocks());
 
@@ -99,5 +99,58 @@ describe('groupByHost', () => {
   });
   it('空列表 → 空 Map', () => {
     expect(groupByHost([]).size).toBe(0);
+  });
+});
+
+describe('verifyKeyFile', () => {
+  it('GET <origin>/<key>.txt，200 + 内容匹配 → ok:true', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      status: 200,
+      text: () => Promise.resolve('abc123def456abc123def456'),
+    } as unknown as Response);
+    const r = await verifyKeyFile('abc123def456abc123def456', 'example.com');
+    expect(r).toEqual({ ok: true, status: 200 });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][0]).toBe('https://example.com/abc123def456abc123def456.txt');
+  });
+
+  it('内容前后空白 trim 后匹配 → ok:true', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      status: 200,
+      text: () => Promise.resolve('\n  abc123def456abc123def456 \n'),
+    } as unknown as Response);
+    expect((await verifyKeyFile('abc123def456abc123def456', 'example.com')).ok).toBe(true);
+  });
+
+  it('200 但内容不符 → ok:false + 不匹配原因', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      status: 200,
+      text: () => Promise.resolve('wrong-content'),
+    } as unknown as Response);
+    const r = await verifyKeyFile('abc123def456abc123def456', 'example.com');
+    expect(r).toEqual({ ok: false, status: 200, reason: '密钥文件内容与密钥不匹配' });
+  });
+
+  it('404 → ok:false + 未找到原因（含 <key>.txt）', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ status: 404 } as Response);
+    const r = await verifyKeyFile('abc123def456abc123def456', 'example.com');
+    expect(r.ok).toBe(false);
+    expect(r.status).toBe(404);
+    expect(r.reason).toMatch(/未找到/);
+    expect(r.reason).toContain('abc123def456abc123def456.txt');
+  });
+
+  it('其他状态（500）→ ok:false + 兜底文案', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ status: 500 } as Response);
+    const r = await verifyKeyFile('abc123def456abc123def456', 'example.com');
+    expect(r).toEqual({ ok: false, status: 500, reason: 'example.com 返回 HTTP 500' });
+  });
+
+  it('fetch 抛错 → ok:false + 无法访问，且不向上抛出', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network down'));
+    const r = await verifyKeyFile('abc123def456abc123def456', 'example.com');
+    expect(r.ok).toBe(false);
+    expect(r.status).toBe(0);
+    expect(r.reason).toMatch(/无法访问/);
   });
 });

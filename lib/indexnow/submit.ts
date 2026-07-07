@@ -6,6 +6,8 @@
  * 替代旧版 CDP 驱动 Bing Webmaster 页面的逐条提交链路。
  */
 
+import { normalizeOrigin } from '../seo-files/url';
+
 const ENDPOINT = 'https://api.indexnow.org/IndexNow';
 
 export interface IndexNowResult {
@@ -55,4 +57,36 @@ export function groupByHost(urls: string[]): Map<string, string[]> {
     m.get(h)!.push(u);
   }
   return m;
+}
+
+export interface VerifyResult {
+  ok: boolean;
+  status: number;
+  reason?: string;
+}
+
+/**
+ * 验证 IndexNow 密钥文件是否正确部署到 <host> 根目录。
+ * 复刻 IndexNow 协议的验证方式：GET https://<host>/<key>.txt，校验内容与密钥匹配。
+ * 用于「测试连接」——在不产生真实提交的前提下定位 403 根因。
+ * fetch 抛错（DNS/网络）或 host 无效时归为"无法访问"，不向上抛出。
+ */
+export async function verifyKeyFile(key: string, host: string): Promise<VerifyResult> {
+  try {
+    const origin = normalizeOrigin(host);
+    const res = await fetch(`${origin}/${key}.txt`);
+    if (res.status !== 200) {
+      return { ok: false, status: res.status, reason: verifyReasonFor(res.status, host, key) };
+    }
+    const body = (await res.text()).trim();
+    if (body !== key) return { ok: false, status: 200, reason: '密钥文件内容与密钥不匹配' };
+    return { ok: true, status: 200 };
+  } catch {
+    return { ok: false, status: 0, reason: `无法访问 ${host}：网络错误或域名无效` };
+  }
+}
+
+function verifyReasonFor(status: number, host: string, key: string): string {
+  if (status === 404) return `站点根目录未找到 ${key}.txt，请先上传密钥文件`;
+  return `${host} 返回 HTTP ${status}`;
 }

@@ -22,7 +22,7 @@ type Tab = 'indexnow' | 'gsc';
  * 默认折叠为一行状态摘要（GSC / IndexNow 是否就绪）；展开后用 Tab 在两套配置间切换。
  * 状态摘要自行读 settings（getSettings + storage.onChanged），不干扰子组件各自的 hook。
  */
-export default function CredentialsSection() {
+export default function CredentialsSection({ domain }: { domain: string }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('indexnow');
   const [summary, setSummary] = useState('未配置');
@@ -78,7 +78,7 @@ export default function CredentialsSection() {
             <button type="button" role="tab" aria-selected={tab === 'indexnow'} onClick={() => setTab('indexnow')} className={`tab${tab === 'indexnow' ? ' is-active' : ''}`} style={{ flex: 1, height: 28, fontSize: 12 }}>IndexNow</button>
             <button type="button" role="tab" aria-selected={tab === 'gsc'} onClick={() => setTab('gsc')} className={`tab${tab === 'gsc' ? ' is-active' : ''}`} style={{ flex: 1, height: 28, fontSize: 12 }}>GSC</button>
           </div>
-          <div role="tabpanel">{tab === 'indexnow' ? <IndexNowKeySection /> : <GscCredentialsSection />}</div>
+          <div role="tabpanel">{tab === 'indexnow' ? <IndexNowKeySection domain={domain} /> : <GscCredentialsSection />}</div>
         </div>
       )}
     </div>

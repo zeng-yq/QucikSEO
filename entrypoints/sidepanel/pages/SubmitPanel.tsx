@@ -75,7 +75,7 @@ export default function SubmitPanel({ site, onBack }: { site: Site; onBack: () =
             </div>
           )}
 
-          <CredentialsSection />
+          <CredentialsSection domain={site.domain.trim()} />
 
           <div style={{ marginTop: 'var(--space-md)' }}>
             <ProgressDashboard domain={site.domain.trim()} />

@@ -36,7 +36,7 @@ export async function mergeDiscovered(
 /**
  * 全量对齐：把 discovered.urls 替换为 fetched（保序去重），返回三段 diff。
  * 与 mergeDiscovered（只增并集）的区别——本函数会删除已不在 sitemap 的链接。
- * 用于「查询进度」流程对账最新 sitemap；提交流程仍用 mergeDiscovered。
+ * 用于提交流程对齐最新 sitemap：只缓存过滤后的有效链接，并自动剔除已下线的旧链接。
  */
 export interface DiscoveredSyncDiff {
   added: string[];

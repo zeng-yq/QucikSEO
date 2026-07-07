@@ -16,16 +16,11 @@ vi.mock('../entrypoints/sidepanel/hooks/useSubmitOrchestrator', () => ({
   useSubmitOrchestrator: () => mockOrch,
 }));
 
-const refresh = vi.fn();
 vi.mock('../entrypoints/sidepanel/hooks/useProgressQuery', () => ({
-  useProgressQuery: () => ({ state: { loading: false }, refresh }),
+  useProgressQuery: () => ({ state: {} }),
 }));
 
-vi.mock('../entrypoints/sidepanel/components/IndexNowKeySection', () => ({
-  default: () => null,
-}));
-
-vi.mock('../entrypoints/sidepanel/components/GscCredentialsSection', () => ({
+vi.mock('../entrypoints/sidepanel/components/CredentialsSection', () => ({
   default: () => null,
 }));
 
@@ -35,7 +30,6 @@ beforeEach(() => {
   mockOrch.run.mockReset();
   mockOrch.cancel.mockReset();
   mockOrch.clearReport.mockReset();
-  refresh.mockReset();
   mockOrch.active = null;
   mockOrch.report = [];
   mockOrch.gsc.state = { running: false, total: 0, done: 0 };
@@ -61,18 +55,6 @@ describe('SubmitPanel', () => {
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'https://example.com/sitemap-index.xml' } });
     fireEvent.click(screen.getByText('一次提交 10 个'));
     expect(mockOrch.run).toHaveBeenCalledWith({ gsc: true, bing: true }, 'example.com', 'https://example.com/sitemap-index.xml');
-  });
-
-  it('idle 态渲染仪表盘的「刷新」按钮', () => {
-    render(<SubmitPanel site={{ domain: 'example.com' }} onBack={() => {}} />);
-    expect(screen.getByText('刷新')).toBeInTheDocument();
-  });
-
-  it('idle 改 sitemapUrl 后点「刷新」用新值', () => {
-    render(<SubmitPanel site={{ domain: 'example.com' }} onBack={() => {}} />);
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'https://example.com/sitemap-index.xml' } });
-    fireEvent.click(screen.getByText('刷新'));
-    expect(refresh).toHaveBeenCalledWith('https://example.com/sitemap-index.xml');
   });
 
   it('返回按钮触发 onBack', () => {

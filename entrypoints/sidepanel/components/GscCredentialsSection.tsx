@@ -3,7 +3,7 @@ import Button from './Button';
 import { useGscCredentials } from '../hooks/useGscCredentials';
 
 /**
- * GSC 服务账号密钥配置区（常驻提交面板，对应 IndexNowKeySection）。
+ * GSC 服务账号密钥配置表单（嵌入 CredentialsSection 的 Tab 内，对应 IndexNowKeySection）。
  * textarea 粘贴整段服务账号 JSON；保存/清空/测试连接。
  * 测试连接：强制重换 access_token，验证密钥格式 + private_key 有效（不验证站点所有权，由真实提交的 403 暴露）。
  */
@@ -15,12 +15,12 @@ export default function GscCredentialsSection() {
   useEffect(() => { setDraft(credentials ?? ''); }, [credentials]);
 
   const dirty = draft !== (credentials ?? '');
-  const testColor = testStatus === 'ok' ? '#16a34a'
-    : testStatus === 'fail' ? '#dc2626'
+  const testColor = testStatus === 'ok' ? 'var(--color-success)'
+    : testStatus === 'fail' ? 'var(--color-error)'
     : 'var(--color-muted)';
 
   return (
-    <div style={{ marginTop: 'var(--space-md)', padding: 12, background: 'var(--color-surface-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-hairline)' }}>
+    <div>
       <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 6 }}>GSC 服务账号密钥（Indexing API）</div>
       <textarea
         value={draft}

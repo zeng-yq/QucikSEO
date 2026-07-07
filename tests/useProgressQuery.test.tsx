@@ -1,74 +1,63 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { mergeDiscovered, getDiscovered } from '../lib/storage/discovered';
-import { appendSubmissions } from '../lib/storage/submissions';
-
-const fetchSitemap = vi.fn();
+import { describe, it, expect, beforeEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { mergeDiscovered } from '../lib/storage/discovered';
+import { appendSubmissions, removeSubmissions } from '../lib/storage/submissions';
 
 import { useProgressQuery } from '../entrypoints/sidepanel/hooks/useProgressQuery';
 
 beforeEach(() => {
-  fetchSitemap.mockReset();
-  fetchSitemap.mockResolvedValue({ urls: ['https://example.com/a', 'https://example.com/b'], stats: { indexDepth: 0, truncated: false } });
+  // storage 在 setup.ts 的 beforeEach 已清空
 });
 
 describe('useProgressQuery', () => {
-  it('load 读本地算 report（不抓取、不填 diff）', async () => {
+  it('load 读本地算 report', async () => {
     await mergeDiscovered('example.com', 'https://example.com/sitemap.xml', ['https://example.com/a']);
     await appendSubmissions('example.com', [{ url: 'https://example.com/a', platform: 'gsc', status: 'ok', ts: 1, batchId: 'b1' }]);
     const { result } = renderHook(() => useProgressQuery('example.com'));
     await waitFor(() => expect(result.current.state.report).toBeDefined());
-    expect(fetchSitemap).not.toHaveBeenCalled();
-    expect(result.current.state.diff).toBeUndefined();
     expect(result.current.state.report?.total).toBe(1);
     expect(result.current.state.report?.platforms[0]).toMatchObject({ platform: 'gsc', done: 1, total: 1 });
   });
 
-  it('refresh 成功：抓取→对齐→report，diff 填充', async () => {
-    await mergeDiscovered('example.com', 'https://example.com/old.xml', ['https://example.com/old']);
-    const { result } = renderHook(() => useProgressQuery('example.com'));
-    await waitFor(() => expect(result.current.state.report).toBeDefined());
-    await act(async () => {
-      await result.current.refresh('https://example.com/sitemap.xml', { fetchSitemap });
-    });
-    expect(fetchSitemap).toHaveBeenCalledWith('https://example.com/sitemap.xml');
-    expect(result.current.state.diff?.added).toEqual(['https://example.com/a', 'https://example.com/b']);
-    expect(result.current.state.diff?.removed).toEqual(['https://example.com/old']);
-    expect(result.current.state.report?.total).toBe(2);
-    // discovered 已对齐为新 sitemap
-    expect((await getDiscovered('example.com'))?.urls).toEqual(['https://example.com/a', 'https://example.com/b']);
-    expect(result.current.state.error).toBeUndefined();
+  it('domain 为空时不加载', () => {
+    const { result } = renderHook(() => useProgressQuery(''));
+    expect(result.current.state.report).toBeUndefined();
   });
 
-  it('refresh 抓取失败：设 error、不动 discovered、保留旧 report', async () => {
-    fetchSitemap.mockRejectedValue(new Error('boom'));
-    await mergeDiscovered('example.com', 'https://example.com/old.xml', ['https://example.com/old']);
+  it('discovered 变化时自动重算', async () => {
+    await mergeDiscovered('example.com', 'https://example.com/sitemap.xml', ['https://example.com/a']);
     const { result } = renderHook(() => useProgressQuery('example.com'));
-    await waitFor(() => expect(result.current.state.report).toBeDefined());
-    const prevReport = result.current.state.report;
-    await act(async () => {
-      await result.current.refresh('https://example.com/sitemap.xml', { fetchSitemap });
-    });
-    expect(result.current.state.error).toBe('boom');
-    expect(result.current.state.loading).toBe(false);
-    // discovered 未变（未对齐）
-    expect((await getDiscovered('example.com'))?.urls).toEqual(['https://example.com/old']);
-    // 旧 report 保留
-    expect(result.current.state.report).toBe(prevReport);
-    // diff 不被填充
-    expect(result.current.state.diff).toBeUndefined();
+    await waitFor(() => expect(result.current.state.report?.total).toBe(1));
+    // 新增一条链接 → onChanged 触发自动 reload
+    await mergeDiscovered('example.com', 'https://example.com/sitemap.xml', ['https://example.com/a', 'https://example.com/b']);
+    await waitFor(() => expect(result.current.state.report?.total).toBe(2));
   });
 
-  it('refresh 期间 loading 翻转', async () => {
-    let resolveFetch!: (v: any) => void;
-    fetchSitemap.mockReturnValue(new Promise((r) => { resolveFetch = r; }));
+  it('submissions 变化时自动重算', async () => {
+    await mergeDiscovered('example.com', 'https://example.com/sitemap.xml', ['https://example.com/a', 'https://example.com/b']);
     const { result } = renderHook(() => useProgressQuery('example.com'));
-    await waitFor(() => expect(result.current.state.report).toBeDefined());
-    let p!: Promise<void>;
-    act(() => { p = result.current.refresh('https://example.com/sitemap.xml', { fetchSitemap }); });
-    await waitFor(() => expect(result.current.state.loading).toBe(true));
-    resolveFetch({ urls: ['https://example.com/a'], stats: { indexDepth: 0, truncated: false } });
-    await act(async () => { await p; });
-    expect(result.current.state.loading).toBe(false);
+    await waitFor(() => expect(result.current.state.report?.platforms[0].done).toBe(0));
+    await appendSubmissions('example.com', [{ url: 'https://example.com/a', platform: 'gsc', status: 'ok', ts: 1, batchId: 'b1' }]);
+    await waitFor(() => expect(result.current.state.report?.platforms[0].done).toBe(1));
+  });
+
+  it('removeSubmissions 变化时自动重算', async () => {
+    await mergeDiscovered('example.com', 'https://example.com/sitemap.xml', ['https://example.com/a']);
+    await appendSubmissions('example.com', [{ url: 'https://example.com/a', platform: 'gsc', status: 'ok', ts: 1, batchId: 'b1' }]);
+    const { result } = renderHook(() => useProgressQuery('example.com'));
+    await waitFor(() => expect(result.current.state.report?.platforms[0].done).toBe(1));
+    await removeSubmissions('example.com', [{ url: 'https://example.com/a', platform: 'gsc' }]);
+    await waitFor(() => expect(result.current.state.report?.platforms[0].done).toBe(0));
+  });
+
+  it('其他 domain 的 storage 变化不触发重算', async () => {
+    await mergeDiscovered('example.com', 'https://example.com/sitemap.xml', ['https://example.com/a']);
+    const { result } = renderHook(() => useProgressQuery('example.com'));
+    await waitFor(() => expect(result.current.state.report?.total).toBe(1));
+    // 另一个 domain 的数据变化
+    await mergeDiscovered('other.com', 'https://other.com/sitemap.xml', ['https://other.com/x']);
+    // 等待可能的误触发（不应变化）
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.state.report?.total).toBe(1);
   });
 });

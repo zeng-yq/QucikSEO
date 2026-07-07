@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getSubmissions, isSubmittedOk, appendSubmissions } from '../lib/storage/submissions';
+import { getSubmissions, isSubmittedOk, appendSubmissions, removeSubmissions } from '../lib/storage/submissions';
 
 describe('submissions 存储', () => {
   it('append 后可读回', async () => {
@@ -33,5 +33,26 @@ describe('submissions 存储', () => {
   it('domain 隔离', async () => {
     await appendSubmissions('a.com', [{ url: 'https://a.com/1', platform: 'gsc', status: 'ok', ts: 1, batchId: 'b1' }]);
     expect(await isSubmittedOk('b.com', 'https://a.com/1', 'gsc')).toBe(false);
+  });
+
+  it('removeSubmissions：删除匹配 (url, platform) 的记录，保留其他', async () => {
+    await appendSubmissions('example.com', [
+      { url: 'https://example.com/a', platform: 'gsc', status: 'ok', ts: 1, batchId: 'b1' },
+      { url: 'https://example.com/a', platform: 'bing', status: 'ok', ts: 2, batchId: 'b1' },
+      { url: 'https://example.com/b', platform: 'gsc', status: 'ok', ts: 3, batchId: 'b1' },
+    ]);
+    await removeSubmissions('example.com', [{ url: 'https://example.com/a', platform: 'gsc' }]);
+    const all = await getSubmissions('example.com');
+    expect(all).toHaveLength(2);
+    expect(all.some((r) => r.url === 'https://example.com/a' && r.platform === 'gsc')).toBe(false);
+    expect(all.some((r) => r.url === 'https://example.com/a' && r.platform === 'bing')).toBe(true);
+  });
+
+  it('removeSubmissions：空数组 no-op', async () => {
+    await appendSubmissions('example.com', [
+      { url: 'https://example.com/a', platform: 'gsc', status: 'ok', ts: 1, batchId: 'b1' },
+    ]);
+    await removeSubmissions('example.com', []);
+    expect(await getSubmissions('example.com')).toHaveLength(1);
   });
 });

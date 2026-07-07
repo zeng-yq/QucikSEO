@@ -2,8 +2,8 @@ import { useCallback, useRef, useState } from 'react';
 import { useGscRunner } from './useGscRunner';
 import { useBingRunner } from './useBingRunner';
 import { fetchSitemapViaBackground, type SitemapFetched } from '@lib/messaging/sitemap-client';
-import { mergeDiscovered } from '@lib/storage/discovered';
-import { getSubmissions, appendSubmissions, type Platform } from '@lib/storage/submissions';
+import { syncDiscovered } from '@lib/storage/discovered';
+import { getSubmissions, appendSubmissions, removeSubmissions, type Platform } from '@lib/storage/submissions';
 import { pickRandom } from '@lib/submit/pick';
 import { partitionLowValue } from '@lib/submit/filter';
 
@@ -52,33 +52,41 @@ export function useSubmitOrchestrator() {
       catch (e) { pushLog('error', 'system', `sitemap 抓取失败: ${(e as Error).message}`); return; }
       pushLog('info', 'system', `发现 ${fetched.urls.length} 条链接（深度 ${fetched.stats.indexDepth}${fetched.stats.truncated ? '，已截断' : ''}）`);
 
-      // ② 增量合并入库（全量，含低价值链接 —— 库仍保全量）
-      const discovered = await mergeDiscovered(domain, sitemapUrl, fetched.urls);
-
-      // ②.5 低价值过滤：账号/法务/用户中心类不进候选池（discovered 库仍保全量）
-      const { kept, dropped } = partitionLowValue(discovered.urls);
+      // ② 低价值过滤：账号/法务/用户中心类不进候选池，也不缓存（discovered 只保留有效链接）
+      const { kept, dropped } = partitionLowValue(fetched.urls);
       if (dropped.length > 0) {
         pushLog('info', 'system', `已过滤 ${dropped.length} 条低价值链接（登录/注册/隐私/条款/账号等）`);
       }
 
-      // ③ 候选池：kept 中对所有勾选平台都未 ok 的 URL（批量 ok-set，避免逐条查）
+      // ③ 全量对齐 discovered：只缓存有效链接，并自动剔除已不在 sitemap 的旧链接
+      await syncDiscovered(domain, sitemapUrl, kept);
+
+      const subs = await getSubmissions(domain);
+
+      // ④ 清理已下线链接的提交记录：url 不在本次 sitemap 的 ok 记录直接删除
+      const validSet = new Set(kept);
+      const staleRecords = subs.filter((s) => s.status === 'ok' && !validSet.has(s.url));
+      if (staleRecords.length > 0) {
+        await removeSubmissions(domain, staleRecords.map((s) => ({ url: s.url, platform: s.platform })));
+      }
+
+      // ⑤ 候选池：kept 中对所有勾选平台都未 ok 的 URL（批量 ok-set，避免逐条查）
       const selected: Platform[] = [];
       if (platforms.gsc) selected.push('gsc');
       if (platforms.bing) selected.push('bing');
-      const subs = await getSubmissions(domain);
       const okSet = new Set(subs.filter((r) => r.status === 'ok').map((r) => `${r.platform}|${r.url}`));
       const pool = kept.filter((u) => selected.every((p) => !okSet.has(`${p}|${u}`)));
 
-      // ④ 随机选 BATCH_SIZE
+      // ⑥ 随机选 BATCH_SIZE
       const picked = pickRandom(pool, BATCH_SIZE);
       if (picked.length === 0) { pushLog('info', 'system', '无可提交链接，全部已提交'); return; }
       pushLog('info', 'system', `候选 ${pool.length}，本批选中 ${picked.length}`);
 
-      // ⑤ 批次 id
+      // ⑦ 批次 id
       const batchId = crypto.randomUUID();
       const collected: ReportItem[] = [];
 
-      // ⑥/⑦ 逐平台提交 + 落库
+      // ⑧/⑨ 逐平台提交 + 落库
       // early-DONE：若 background 在任何 STATE 之前就发 GSC_DONE/BING_DONE（页面加载超时 / 登录失败 / 权限失败），
       // start 将 resolve 成 []，此处 results 为空，因此不会向 submissions 追加、也不会写报告——这是有意的（无操作即无记录），错误信号由该平台 LogPanel 承载。
       if (platforms.gsc) {
@@ -98,7 +106,7 @@ export function useSubmitOrchestrator() {
         } catch { /* 同上 */ }
       }
 
-      // ⑧ 报告
+      // ⑩ 报告
       setReport(collected);
       pushLog('info', 'system', `批次完成：${collected.length} 条结果`);
     } finally {

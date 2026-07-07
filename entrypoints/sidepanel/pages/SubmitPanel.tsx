@@ -4,8 +4,7 @@ import ProgressDashboard from '../components/ProgressDashboard';
 import RunningOverlay from '../components/RunningOverlay';
 import BatchReportCard from '../components/BatchReportCard';
 import SubmitBar from '../components/SubmitBar';
-import IndexNowKeySection from '../components/IndexNowKeySection';
-import GscCredentialsSection from '../components/GscCredentialsSection';
+import CredentialsSection from '../components/CredentialsSection';
 import { IconBack } from '../components/icons';
 import { useSubmitOrchestrator } from '../hooks/useSubmitOrchestrator';
 import { isValidDomain } from '@lib/storage/projects';
@@ -41,13 +40,12 @@ export default function SubmitPanel({ site, onBack }: { site: Site; onBack: () =
   }
 
   return (
-    <div style={{ padding: 'var(--space-md)', display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+    <div style={{ padding: 'var(--space-md)', display: 'flex', flexDirection: 'column' }}>
       {!running && (
         <button type="button" onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, border: 'none', background: 'none', color: 'var(--color-muted)', cursor: 'pointer', fontSize: 13, marginBottom: 12, padding: 0 }}>
           <IconBack size={14} /> 返回
         </button>
       )}
-      <h2 style={{ fontSize: 17, marginBottom: 'var(--space-md)' }}>网站提交</h2>
 
       {running ? (
         <RunningOverlay orch={orch} gscSelected={gsc} bingSelected={bing} onCancel={orch.cancel} />
@@ -60,19 +58,6 @@ export default function SubmitPanel({ site, onBack }: { site: Site; onBack: () =
             将自动过滤登录 / 注册 / 隐私 / 条款 / 账号等低价值链接，不参与提交。
           </div>
 
-          <IndexNowKeySection />
-          <GscCredentialsSection />
-
-          {showReport && (
-            <div style={{ marginTop: 'var(--space-md)' }}>
-              <BatchReportCard report={orch.report} onClose={orch.clearReport} />
-            </div>
-          )}
-
-          <div style={{ marginTop: 'var(--space-md)', flex: 1 }}>
-            <ProgressDashboard domain={site.domain.trim()} sitemapUrl={sitemapUrl.trim()} />
-          </div>
-
           <SubmitBar
             gsc={gsc}
             bing={bing}
@@ -83,6 +68,18 @@ export default function SubmitPanel({ site, onBack }: { site: Site; onBack: () =
             busy={busy}
             ready={ready}
           />
+
+          {showReport && (
+            <div style={{ marginTop: 'var(--space-md)' }}>
+              <BatchReportCard report={orch.report} onClose={orch.clearReport} />
+            </div>
+          )}
+
+          <CredentialsSection />
+
+          <div style={{ marginTop: 'var(--space-md)' }}>
+            <ProgressDashboard domain={site.domain.trim()} />
+          </div>
         </>
       )}
     </div>

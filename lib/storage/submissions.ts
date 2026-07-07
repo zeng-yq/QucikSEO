@@ -38,3 +38,17 @@ export async function appendSubmissions(domain: string, records: SubmissionRecor
   all.push(...records);
   await chrome.storage.local.set({ [key(domain)]: all });
 }
+
+/**
+ * 删除指定 (url, platform) 的全部提交记录（用于清理已下线链接的 stale 记录）。
+ */
+export async function removeSubmissions(
+  domain: string,
+  toRemove: { url: string; platform: Platform }[],
+): Promise<void> {
+  if (toRemove.length === 0) return;
+  const all = await getSubmissions(domain);
+  const removeSet = new Set(toRemove.map((r) => `${r.platform}|${r.url}`));
+  const next = all.filter((r) => !removeSet.has(`${r.platform}|${r.url}`));
+  await chrome.storage.local.set({ [key(domain)]: next });
+}

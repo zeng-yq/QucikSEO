@@ -16,9 +16,7 @@ export interface SubmitBarProps {
 export default function SubmitBar({ gsc, bing, onToggleGsc, onToggleBing, onSubmit, onCancel, busy, ready }: SubmitBarProps) {
   return (
     <div style={{
-      position: 'sticky', bottom: 0, display: 'flex', gap: 8, alignItems: 'center',
-      padding: 'var(--space-xs) 0', background: 'var(--color-canvas)',
-      borderTop: '1px solid var(--color-hairline)',
+      display: 'flex', gap: 8, alignItems: 'center', marginTop: 'var(--space-sm)',
     }}>
       <PlatformChip label="GSC" icon={<GscMark />} checked={gsc} onToggle={onToggleGsc} />
       <PlatformChip label="Bing" icon={<BingMark />} checked={bing} onToggle={onToggleBing} />

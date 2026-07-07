@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
-const refresh = vi.fn();
-const mock: { state: any; refresh: typeof refresh } = { state: { loading: false }, refresh };
+const mock: { state: any } = { state: {} };
 vi.mock('../entrypoints/sidepanel/hooks/useProgressQuery', () => ({
   useProgressQuery: () => mock,
 }));
@@ -23,57 +22,57 @@ const REPORT = {
 };
 
 beforeEach(() => {
-  refresh.mockReset();
-  mock.state = { loading: false };
+  mock.state = {};
 });
 
 describe('ProgressDashboard', () => {
-  it('点击「刷新」调用 refresh(sitemapUrl)', () => {
-    render(<ProgressDashboard domain="example.com" sitemapUrl="https://example.com/sitemap.xml" />);
-    fireEvent.click(screen.getByText('刷新'));
-    expect(refresh).toHaveBeenCalledWith('https://example.com/sitemap.xml');
+  it('filter 标签显示对应数量', () => {
+    mock.state = { report: REPORT };
+    render(<ProgressDashboard domain="example.com" />);
+    expect(screen.getByText('全部').closest('button')?.textContent).toBe('全部2');
+    expect(screen.getByText('GSC未提交').closest('button')?.textContent).toBe('GSC未提交1');
+    expect(screen.getByText('Bing未提交').closest('button')?.textContent).toBe('Bing未提交2');
   });
 
-  it('loading 时按钮禁用且文案「抓取中…」', () => {
-    mock.state = { loading: true };
-    render(<ProgressDashboard domain="example.com" sitemapUrl="https://example.com/sitemap.xml" />);
-    expect(screen.getByText('抓取中…')).toBeDisabled();
+  it('每条链接显示 GSC/Bing 提交状态', () => {
+    mock.state = { report: REPORT };
+    render(<ProgressDashboard domain="example.com" />);
+    expect(screen.getByText('GSC✓')).toBeInTheDocument();
+    expect(screen.getByText('GSC✗')).toBeInTheDocument();
+    expect(screen.getAllByText('Bing✗')).toHaveLength(2);
   });
 
-  it('sitemapUrl 为空时刷新按钮禁用', () => {
-    render(<ProgressDashboard domain="example.com" sitemapUrl="" />);
-    expect(screen.getByText('刷新')).toBeDisabled();
+  it('GSC 已提交用 primary、未提交灰', () => {
+    mock.state = { report: REPORT };
+    render(<ProgressDashboard domain="example.com" />);
+    expect(screen.getByText('GSC✓').style.color).toBe('var(--color-primary)');
+    expect(screen.getByText('GSC✗').style.color).toBe('var(--color-muted-soft)');
   });
 
-  it('有 report 时显示分平台进度与百分比', () => {
-    mock.state = { loading: false, report: REPORT };
-    render(<ProgressDashboard domain="example.com" sitemapUrl="https://example.com/sitemap.xml" />);
-    expect(screen.getByText('GSC')).toBeInTheDocument();
-    expect(screen.getByText(/1\/2（50%/)).toBeInTheDocument();
-    expect(screen.getByText(/0\/2（0%/)).toBeInTheDocument();
-  });
-
-  it('diff 存在时显示对账摘要与相对时间', () => {
-    mock.state = { loading: false, report: REPORT, diff: { added: ['x'], removed: ['y'], unchanged: ['z'] }, updatedAt: Date.now() - 7200000 };
-    render(<ProgressDashboard domain="example.com" sitemapUrl="https://example.com/sitemap.xml" />);
-    expect(screen.getByText(/本次新增 1 · 清理 1 · 未变 1/)).toBeInTheDocument();
-    expect(screen.getByText(/2h前/)).toBeInTheDocument();
-  });
-
-  it('error 存在时显示错误条', () => {
-    mock.state = { loading: false, error: '抓取失败' };
-    render(<ProgressDashboard domain="example.com" sitemapUrl="https://example.com/sitemap.xml" />);
-    expect(screen.getByText('抓取失败')).toBeInTheDocument();
+  it('Bing 已提交用 success、未提交灰', () => {
+    mock.state = {
+      report: {
+        total: 1,
+        platforms: [
+          { platform: 'gsc' as const, done: 1, total: 1, pending: 0 },
+          { platform: 'bing' as const, done: 1, total: 1, pending: 0 },
+        ],
+        items: [{ url: 'https://example.com/a', gsc: 'done' as const, bing: 'done' as const }],
+        stale: [],
+      },
+    };
+    render(<ProgressDashboard domain="example.com" />);
+    expect(screen.getByText('Bing✓').style.color).toBe('var(--color-success)');
   });
 
   it('无 report 时显示空态', () => {
-    render(<ProgressDashboard domain="example.com" sitemapUrl="https://example.com/sitemap.xml" />);
+    render(<ProgressDashboard domain="example.com" />);
     expect(screen.getByText(/还没有进度数据/)).toBeInTheDocument();
   });
 
   it('筛选「GSC未提交」只显示 gsc=pending 的子集', () => {
-    mock.state = { loading: false, report: REPORT };
-    render(<ProgressDashboard domain="example.com" sitemapUrl="https://example.com/sitemap.xml" />);
+    mock.state = { report: REPORT };
+    render(<ProgressDashboard domain="example.com" />);
     expect(screen.getByText(/example\.com\/a/)).toBeInTheDocument();
     fireEvent.click(screen.getByText('GSC未提交'));
     expect(screen.queryByText(/example\.com\/a/)).not.toBeInTheDocument();
@@ -82,10 +81,26 @@ describe('ProgressDashboard', () => {
 
   it('超过 100 条时显示「加载更多」并追加', () => {
     const items = Array.from({ length: 150 }, (_, i) => ({ url: `https://example.com/p${i}`, gsc: 'pending' as const, bing: 'pending' as const }));
-    mock.state = { loading: false, report: { ...REPORT, items } };
-    render(<ProgressDashboard domain="example.com" sitemapUrl="https://example.com/sitemap.xml" />);
+    mock.state = { report: { ...REPORT, items } };
+    render(<ProgressDashboard domain="example.com" />);
     expect(screen.getByText(/加载更多（剩余 50）/)).toBeInTheDocument();
     fireEvent.click(screen.getByText(/加载更多/));
     expect(screen.queryByText(/加载更多/)).not.toBeInTheDocument();
+  });
+
+  it('链接列表渲染在可滚动矩形区域内（maxHeight + overflow + border）', () => {
+    mock.state = { report: REPORT };
+    const { container } = render(<ProgressDashboard domain="example.com" />);
+    const scrollArea = container.querySelector('[style*="max-height"]') as HTMLElement | null;
+    expect(scrollArea).not.toBeNull();
+    expect(scrollArea!.style.overflowY).toBe('auto');
+    expect(scrollArea!.style.border).toContain('var(--color-hairline)');
+  });
+
+  it('不渲染刷新按钮与搜索框', () => {
+    mock.state = { report: REPORT };
+    render(<ProgressDashboard domain="example.com" />);
+    expect(screen.queryByText('刷新')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('搜索 URL')).not.toBeInTheDocument();
   });
 });

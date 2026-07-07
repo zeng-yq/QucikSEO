@@ -93,7 +93,7 @@ describe('useSubmitOrchestrator（sitemap 流程）', () => {
     expect(result.current.logs.some((l) => /已过滤 2 条低价值链接/.test(l.message))).toBe(true);
   });
 
-  it('mergeDiscovered 收到全量（低价值项未被提前丢弃）', async () => {
+  it('discovered 只缓存过滤后的有效链接（低价值项不入库）', async () => {
     fetchSitemap.mockResolvedValue({
       urls: ['https://example.com/login', 'https://example.com/blog/post-1'],
       stats: { indexDepth: 0, truncated: false },
@@ -102,7 +102,18 @@ describe('useSubmitOrchestrator（sitemap 流程）', () => {
     await act(async () => { await result.current.run({ gsc: true, bing: false }, 'example.com', SITEMAP, { fetchSitemap }); });
     const { getDiscovered } = await import('../lib/storage/discovered');
     const d = await getDiscovered('example.com');
-    expect(d?.urls).toEqual(['https://example.com/login', 'https://example.com/blog/post-1']);
+    expect(d?.urls).toEqual(['https://example.com/blog/post-1']);
+  });
+
+  it('已下线链接的 ok 提交记录被自动清理', async () => {
+    // 预置 /old 已 ok（模拟历史提交），本次 sitemap 不含 /old
+    await appendSubmissions('example.com', [{ url: 'https://example.com/old', platform: 'gsc', status: 'ok', ts: 1, batchId: 'old' }]);
+    fetchSitemap.mockResolvedValue({ urls: ['https://example.com/a', 'https://example.com/b'], stats: { indexDepth: 0, truncated: false } });
+    const { result } = renderHook(() => useSubmitOrchestrator());
+    await act(async () => { await result.current.run({ gsc: true, bing: false }, 'example.com', SITEMAP, { fetchSitemap }); });
+    const { getSubmissions } = await import('../lib/storage/submissions');
+    const all = await getSubmissions('example.com');
+    expect(all.some((r) => r.url === 'https://example.com/old')).toBe(false);
   });
 
   it('dropped 为 0 时不输出过滤日志', async () => {

@@ -3,7 +3,7 @@ import TextInput from './TextInput';
 import { useIndexNowKey } from '../hooks/useIndexNowKey';
 
 /**
- * IndexNow 密钥配置区（常驻提交面板）。
+ * IndexNow 密钥配置表单（嵌入 CredentialsSection 的 Tab 内）。
  * 未配置：显示「生成密钥」。
  * 已配置：readonly 输入框展示 key + 「下载密钥文件」「刷新」。
  * 文案提示用户把 <key>.txt 上传到每个站点根目录。
@@ -13,8 +13,8 @@ export default function IndexNowKeySection() {
   const fileName = key ? `${key}.txt` : '<key>.txt';
   const urlExample = 'https://<你的域名>/<key>.txt';
   return (
-    <div style={{ marginTop: 'var(--space-md)', padding: 12, background: 'var(--color-surface-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-hairline)' }}>
-      <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 6 }}>IndexNow 密钥（提交到 Bing/Yandex 等搜索引擎）</div>
+    <div>
+      <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 6 }}>密钥将提交到 Bing / Yandex 等搜索引擎</div>
       <TextInput
         value={key ?? ''}
         readOnly

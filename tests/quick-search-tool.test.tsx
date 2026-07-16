@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import QuickSearchTool from '../entrypoints/sidepanel/pages/QuickSearchTool';
 
 afterEach(() => { vi.restoreAllMocks(); });
@@ -43,16 +43,18 @@ describe('QuickSearchTool', () => {
   });
 
   it('渲染搜索位置下拉,默认选中美国', () => {
-    const { container } = render(<QuickSearchTool keyword="apple" />);
-    const select = container.querySelector('select') as HTMLSelectElement;
-    expect(select).toBeTruthy();
-    expect(select.value).toBe('US');
+    render(<QuickSearchTool keyword="apple" />);
+    const combo = screen.getByRole('combobox', { name: '搜索定位' }) as HTMLInputElement;
+    expect(combo.value).toMatch(/美国/);
   });
 
   it('切换下拉写入 kw-tools:geo', async () => {
-    const { container } = render(<QuickSearchTool keyword="apple" />);
-    const select = container.querySelector('select') as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: 'DE' } });
+    render(<QuickSearchTool keyword="apple" />);
+    const combo = screen.getByRole('combobox', { name: '搜索定位' }) as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(combo, { target: { value: '德' } });
+      fireEvent.mouseDown(screen.getByText(/德国/));
+    });
     const items = (await chrome.storage.local.get('kw-tools:geo')) as Record<string, { code: string }>;
     expect(items['kw-tools:geo'].code).toBe('DE');
   });

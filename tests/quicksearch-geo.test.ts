@@ -38,8 +38,8 @@ describe('resolveGeo', () => {
 });
 
 describe('GEO_REGIONS 数据完整性', () => {
-  it('恰好 8 条，code 唯一，字段齐全，坐标在合理范围', () => {
-    expect(GEO_REGIONS).toHaveLength(8);
+  it('扩充到 40 条常用国家，code 唯一，字段齐全，坐标在合理范围', () => {
+    expect(GEO_REGIONS).toHaveLength(40);
     const codes = GEO_REGIONS.map((r) => r.code);
     expect(new Set(codes).size).toBe(codes.length);
     for (const r of GEO_REGIONS) {

@@ -5,7 +5,11 @@
  * 设计：docs/superpowers/specs/2026-07-04-google-search-geo-design.md
  */
 
-export type GeoCode = 'US' | 'DE' | 'JP' | 'ES' | 'GB' | 'FR' | 'CA' | 'AU' | 'OFF';
+// 国家清单统一来自 lib/geo/countries.ts（与 Ahrefs 工具共用同一份）。
+// GeoCode 放宽为 string，避免每新增一国都要回改此处的字面量联合。
+import { COUNTRIES } from '../geo/countries';
+
+export type GeoCode = string;
 
 export interface GeoRegion {
   code: Exclude<GeoCode, 'OFF'>;
@@ -16,17 +20,18 @@ export interface GeoRegion {
   lng: number;
 }
 
-/** 精选 8 国（首都/代表城市坐标）。 */
-export const GEO_REGIONS: GeoRegion[] = [
-  { code: 'US', label: '美国', flag: '🇺🇸', gl: 'US', lat: 37.4224, lng: -122.0842 }, // 山景城（gslocation 默认坐标）
-  { code: 'DE', label: '德国', flag: '🇩🇪', gl: 'DE', lat: 52.52, lng: 13.405 }, // 柏林
-  { code: 'JP', label: '日本', flag: '🇯🇵', gl: 'JP', lat: 35.6762, lng: 139.6503 }, // 东京
-  { code: 'ES', label: '西班牙', flag: '🇪🇸', gl: 'ES', lat: 40.4168, lng: -3.7038 }, // 马德里
-  { code: 'GB', label: '英国', flag: '🇬🇧', gl: 'GB', lat: 51.5074, lng: -0.1278 }, // 伦敦
-  { code: 'FR', label: '法国', flag: '🇫🇷', gl: 'FR', lat: 48.8566, lng: 2.3522 }, // 巴黎
-  { code: 'CA', label: '加拿大', flag: '🇨🇦', gl: 'CA', lat: 43.6532, lng: -79.3832 }, // 多伦多
-  { code: 'AU', label: '澳大利亚', flag: '🇦🇺', gl: 'AU', lat: -33.8688, lng: 151.2093 }, // 悉尼
-];
+/**
+ * 从统一国家数据源派生；code 转大写以兼容已有 storage（'kw-tools:geo' 存大写）。
+ * 原 8 国坐标不变，扩充国家详见 lib/geo/countries.ts。
+ */
+export const GEO_REGIONS: GeoRegion[] = COUNTRIES.map((c) => ({
+  code: c.code.toUpperCase(),
+  label: c.label,
+  flag: c.flag,
+  gl: c.code.toUpperCase(),
+  lat: c.lat,
+  lng: c.lng,
+}));
 
 export const DEFAULT_GEO_CODE: GeoCode = 'US';
 export const GEO_OFF: GeoCode = 'OFF';

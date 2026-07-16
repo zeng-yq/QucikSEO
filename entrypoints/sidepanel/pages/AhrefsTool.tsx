@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import Button from '../components/Button';
-import TextInput from '../components/TextInput';
-import Select from '../components/Select';
+import CountrySelect from '../components/CountrySelect';
 import ToolPanel from '../components/ToolPanel';
 import { AhrefsLogo } from '../components/brand-logos';
 import { COUNTRIES, buildAhrefsUrl, isValidCountryCode } from '@lib/ahrefs/url';
@@ -12,7 +11,6 @@ interface Props { keyword: string; }
 
 export default function AhrefsTool({ keyword }: Props) {
   const [country, setCountry] = useState('us');
-  const [custom, setCustom] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -22,7 +20,12 @@ export default function AhrefsTool({ keyword }: Props) {
     });
   }, []);
 
-  const options = [...COUNTRIES.map((c) => ({ value: c.code, label: c.label })), { value: '__custom', label: '自定义…' }];
+  const options = COUNTRIES.map((c) => ({
+    value: c.code,
+    label: c.label,
+    flag: c.flag,
+    searchKeys: [c.label, c.en, c.code, c.code.toUpperCase()],
+  }));
 
   function open() {
     try {
@@ -43,25 +46,17 @@ export default function AhrefsTool({ keyword }: Props) {
       title="Keyword Difficulty Checker"
     >
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 'var(--space-xs)', alignItems: 'stretch' }}>
-        <Select
+        <CountrySelect
           value={country}
           options={options}
-          onChange={(e) => {
-            if (e.target.value === '__custom') { setCustom(true); setCountry(''); }
-            else { setCustom(false); setCountry(e.target.value); }
-          }}
-          style={{ minWidth: 0 }}
+          onChange={setCountry}
+          allowFreeText
+          freeTextValidate={isValidCountryCode}
+          placeholder="两位代码,如 us"
+          ariaLabel="国家"
         />
         <Button onClick={open} disabled={canOpen} style={{ minWidth: 0, width: '100%' }}>点击查询</Button>
       </div>
-      {custom && (
-        <TextInput
-          value={country}
-          placeholder="两位代码,如 us"
-          onChange={(e) => setCountry(e.target.value)}
-          style={{ marginTop: 8 }}
-        />
-      )}
       {error && <div style={{ color: 'var(--color-error)', fontSize: 12, marginTop: 6 }}>{error}</div>}
     </ToolPanel>
   );

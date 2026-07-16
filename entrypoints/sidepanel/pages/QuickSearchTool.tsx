@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Button from '../components/Button';
-import Select from '../components/Select';
+import CountrySelect from '../components/CountrySelect';
 import ToolPanel from '../components/ToolPanel';
 import { BingLogo, YandexLogo, QuickSearchLogo } from '../components/brand-logos';
 import { buildGoogleSearchUrl, buildBingSearchUrl, buildYandexSearchUrl } from '@lib/quicksearch/url';
@@ -16,27 +16,32 @@ export default function QuickSearchTool({ keyword }: Props) {
     void (async () => setGeoCode((await getGeoPref()).code))();
   }, []);
 
-  function onGeoChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const v = e.target.value as GeoCode;
-    setGeoCode(v);
+  function onGeoChange(v: string) {
+    setGeoCode(v as GeoCode);
     void setGeoPref(v); // background 监听 storage 变化,实时增删规则
   }
 
-  const geoOptions = [
-    { value: GEO_OFF, label: '🚪 关闭(用真实位置)' },
-    ...GEO_REGIONS.map((r) => ({ value: r.code, label: `${r.flag} ${r.label}` })),
-  ];
+  const geoOptions = GEO_REGIONS.map((r) => ({
+    value: r.code,
+    label: r.label,
+    flag: r.flag,
+    searchKeys: [r.label, r.code, r.code.toLowerCase()],
+  }));
+  const prefixOptions = [{ value: GEO_OFF, label: '关闭(用真实位置)', flag: '🚪', searchKeys: ['关闭', 'off', '真实'] }];
 
   // 两行均用 1fr 1fr 等分网格,保证上下两列宽度严格一致(下拉框 = Google = Bing = Yandex)。
-  // minWidth:0 解除 grid item 默认 min-content 下限,避免内容把列撑宽。
   return (
     <ToolPanel logo={<QuickSearchLogo size={18} />} title="搜索引擎查询">
       {/* 第 1 行:搜索定位下拉 + Google 按钮(geo 仅作用于 Google)。标签独占一行,避免窄列换行。 */}
       <div style={{ fontSize: 11, color: 'var(--color-muted)', marginBottom: 4, whiteSpace: 'nowrap' }}>搜索定位(仅对 Google 搜索有效)</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 'var(--space-sm)' }}>
-        <div style={{ minWidth: 0 }}>
-          <Select value={geoCode} options={geoOptions} onChange={onGeoChange} />
-        </div>
+        <CountrySelect
+          value={geoCode}
+          options={geoOptions}
+          prefixOptions={prefixOptions}
+          onChange={onGeoChange}
+          ariaLabel="搜索定位"
+        />
         <Button
           variant="secondary"
           onClick={() => chrome.tabs.create({ url: buildGoogleSearchUrl(keyword) })}

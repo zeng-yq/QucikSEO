@@ -136,3 +136,13 @@ export interface SitemapError {
 
 export type SitemapRequest = SitemapFetchRequest;
 export type SitemapEvent = SitemapResult | SitemapError;
+
+// ---------------------------------------------------------------------------
+// Content script -> background：打开 Gemini 提问链接。
+// ---------------------------------------------------------------------------
+
+/** 请求 background 打开 Gemini 新标签页。 */
+export interface GeminiOpen {
+  type: 'OPEN_GEMINI';
+  url: string;
+}
